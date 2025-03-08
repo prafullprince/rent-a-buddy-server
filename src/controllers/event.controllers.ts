@@ -6,6 +6,7 @@ import Category from "../models/category.models";
 import Section from "../models/section.models";
 import SubCategory from "../models/subcategory.models";
 import SubSection from "../models/subsection.models";
+import mongoose from "mongoose";
 
 // create event
 export const createEvent = async (req: Request, res: Response) => {
@@ -299,16 +300,15 @@ export const editSection = async (req: Request, res: Response) => {
     }
 
     // check is category/section exist
-    const [isCategory,isSection] = await Promise.all([
+    const [isCategory, isSection] = await Promise.all([
       Category.findOne({ name: name }),
-      Section.findOne({ _id: sectionId })
+      Section.findOne({ _id: sectionId }),
     ]);
 
     // validation
     if (!isCategory || !isSection) {
       return ErrorResponse(res, 404, "All fields are required");
     }
-
 
     // update
     isSection.name = isCategory._id;
@@ -326,7 +326,7 @@ export const editSection = async (req: Request, res: Response) => {
 export const editSubSection = async (req: Request, res: Response) => {
   try {
     // fetch data
-    const { name,about,price,subSectionId } = req.body;
+    const { name, about, price, subSectionId } = req.body;
 
     // validation
     if (!subSectionId) {
@@ -335,9 +335,9 @@ export const editSubSection = async (req: Request, res: Response) => {
 
     // check is category exist
     const [isSubCategory, isSubSection] = await Promise.all([
-        SubCategory.findOne({ name: name }),
-        SubSection.findOne({ _id: subSectionId })
-    ])
+      SubCategory.findOne({ name: name }),
+      SubSection.findOne({ _id: subSectionId }),
+    ]);
 
     // validation
     if (!isSubCategory || !isSubSection) {
@@ -345,19 +345,123 @@ export const editSubSection = async (req: Request, res: Response) => {
     }
 
     // update
-    if(name){
-        isSubSection.name = isSubCategory._id;
+    if (name) {
+      isSubSection.name = isSubCategory._id;
     }
-    if(about){
-        isSubSection.about = about;
+    if (about) {
+      isSubSection.about = about;
     }
-    if(price){
-        isSubSection.price = price;
+    if (price) {
+      isSubSection.price = price;
     }
     const data = await isSubSection.save();
 
     // return res
     return SuccessResponse(res, 200, "Subsection edited successfully", data);
+  } catch (error) {
+    console.log(error);
+    return ErrorResponse(res, 500, "Internal server error");
+  }
+};
+
+// infiniteEvent with filter -> Homepage card
+export const infiniteEventsWithFilter = async (req: Request, res: Response) => {
+  try {
+    // fetch data
+    const { limit = 10, cursor, filters } = req.body;
+    const limitNumber = parseInt(limit as string, 10);
+
+    // validation
+    if (isNaN(limitNumber) || limitNumber < 1 || !filters) {
+      return res.status(400).json({ message: "Invalid pagination parameters" });
+    }
+
+    // make query
+    const query: any = {};
+
+    // make cursor
+    if (cursor) {
+      if (mongoose.isValidObjectId(cursor)) {
+        query._id = { $lt: new mongoose.Types.ObjectId(cursor) };
+      } else {
+        return ErrorResponse(res, 400, "Invalid cursor");
+      }
+    }
+
+    // apply filters
+    if (filters.isActive) {
+      query.isActive = filters.isActive;
+    }
+    if (filters.username) {
+      query["userData.username"] = filters.username;
+    }
+    if (filters.location) {
+      query.location = filters.location;
+    }
+
+    // pipeline
+    const data = await Event.aggregate([
+      // stage 1 -> join event -> user
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "userData",  // output field name
+        },
+      },
+      { $unwind: "$userData" }, // convert userData from array into object
+
+      // stage 2 -> join user -> ratingAndReviews
+      {
+        $lookup: {
+          from: "ratings",
+          localField: "userData.ratingAndReviews",
+          foreignField: "_id",
+          as: "ratingAndReviewsData",
+        },
+      },
+
+      // calculate highest rating
+      {
+        $addFields: {
+          highestRating: { $max: "$ratingAndReviewsData.rating" }
+        }
+      },
+
+      // match filters
+      {
+        $match: query
+      },
+
+      // sort
+      {
+        $sort: {
+          highestRating: -1,
+          createdAt: -1
+        }
+      },
+
+      // limit
+      {
+        $limit: limitNumber
+      }
+
+      // project to select which fields are needed
+    ]);
+
+    // nextCursor and hasmore
+    const hasmore = data.length === limitNumber;
+    const nextCursor = data.length > 0 ? data[data.length-1]._id : null;
+
+    // return res
+    return SuccessResponse(res, 200, "Events fetched successfully", {
+      pagination: {
+        hasmore,
+        nextCursor,
+        data
+      }
+    });
 
   } catch (error) {
     console.log(error);
@@ -365,3 +469,89 @@ export const editSubSection = async (req: Request, res: Response) => {
   }
 };
 
+// eventOfParticularUser -> eventDetails
+export const eventOfParticularUser = async (req: Request, res: Response) => {
+  try {
+    // fetch data
+    const { eventId } = req.body;
+
+    // validation
+    if (!eventId) {
+      return ErrorResponse(res, 400, "All fields are required");
+    }
+
+    // check if event exist
+    const isEvent = await Event.findOne({ _id: eventId });
+
+    // validation
+    if (!isEvent) {
+      return ErrorResponse(res, 404, "Event not found");
+    }
+
+    // pipeline to getAllDetails of particular event
+    const data = await Event.aggregate([
+      // stage 1 -> join event + user
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "userData"
+        }
+      },
+      {$unwind: "userData"},
+
+      // stage 2 -> join user + rating
+      {
+        $lookup: {
+          from: "ratings",
+          localField: "userData.ratingAndReviews",
+          foreignField: "_id",
+          as: "userData.ratingData"
+        }
+      },
+
+      // stage 3 -> calculate avg rating
+      {
+        $addFields: {
+          avgRating: { $avg: "$userData.ratingData.rating" },
+        }
+      },
+
+      // stage 4 -> categories
+      {
+        $lookup: {
+          from: "sections",
+          localField: "sections",
+          foreignField: "_id",
+          as: "sectionData" 
+        }
+      },
+
+      // stage 5 -> sub-categories
+      {
+        $lookup: {
+          from: "subSections",
+          localField: "sectionData.subSections",
+          foreignField: "_id",
+          as: "subSectionData"
+        }
+      },
+
+      // match
+      {
+        $match: {
+          _id: eventId
+        }
+      }
+
+      // $project
+    ]);
+
+    // return res
+    return SuccessResponse(res, 200, "Events of this user fetched successfully", data);
+  } catch (error) {
+    console.log(error);
+    return ErrorResponse(res, 500, "Internal server error");
+  }
+};

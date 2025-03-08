@@ -97,6 +97,11 @@ const userSchema:Schema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "RatingAndReview",
     }],
+    ethnicity: {
+        type: String,
+        enum: ["Indian", "Pakistani", "Bangladeshi", "Chinese", "Other"],
+        default: "Indian",
+    }
 
 },{timestamps:true});
 
