@@ -1,6 +1,9 @@
 import mongoose, { Schema } from "mongoose";
-import { ICategory } from "../types/schema/categorySchema.types";
 
+export interface ICategory {
+    name: string;
+    subCategories: mongoose.Types.ObjectId[];
+}
 
 const categorySchema = new Schema({
     name: {

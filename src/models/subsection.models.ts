@@ -1,19 +1,21 @@
 import mongoose, { Schema } from "mongoose";
-import { IEventSubSection } from "../types/schema/eventSchema.types";
+
+// interface
+export interface IEventSubSection {
+    subCategoryId: mongoose.Types.ObjectId;
+    price: number;
+    about: string;
+}
 
 
 const subSectionSchema = new Schema({
-    name: {
+    subCategoryId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "SubCategory",
     },
     price: {
         type: Number,
         required: true,
-    },
-    section: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Section",
     },
     about: {
         type: String,

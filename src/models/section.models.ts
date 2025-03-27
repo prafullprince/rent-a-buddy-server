@@ -1,21 +1,25 @@
 import mongoose, { Schema } from "mongoose";
-import { IEventSection } from "../types/schema/eventSchema.types";
+
+// interface
+export interface IEventSection {
+    categoryId: mongoose.Types.ObjectId;
+    subSections: mongoose.Types.ObjectId[];
+}
 
 
 const sectionSchema = new Schema({
-    name: {
+    categoryId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Category",
-    },
-    event: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Event",
     },
     subSections: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "SubSection",
     }],
 })
+
+// createIndex
+sectionSchema.index({ _id: 1, subSections: 1 }); 
 
 const Section = mongoose.model<IEventSection>("Section",sectionSchema);
 export default Section;

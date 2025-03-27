@@ -1,23 +1,38 @@
 import { Request, Response } from "express";
 import { ErrorResponse, SuccessResponse } from "../helper/apiResponse.helper";
-import Event from "../models/event.models";
+import Event from '../models/event.models';
 import User from "../models/user.models";
 import Category from "../models/category.models";
 import Section from "../models/section.models";
 import SubCategory from "../models/subcategory.models";
 import SubSection from "../models/subsection.models";
 import mongoose from "mongoose";
+import fileUpload from "express-fileupload";
+import { thumbnailToCloudinary } from "../helper/mediaUpload.helper";
+import { createEventBodySchema } from "../zod/request.body.validation";
+import Service from "../models/service.models";
+import _ from 'lodash';
 
-// create event
-export const createEvent = async (req: Request, res: Response) => {
+// create event TODO: date/time
+export const createEvent = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     // fetch data
     const userId = req.user?.id;
-    const { availability, location } = req.body;
+    const parseData = createEventBodySchema.safeParse(req.body);
 
     // validation
-    if (!availability || !location) {
-      return ErrorResponse(res, 400, "credentials not found");
+    if (!parseData.success) {
+      return ErrorResponse(res, 400, "validation failed");
+    }
+
+    // check image url
+    const imageUrl = req.files?.imageUrl as fileUpload.UploadedFile;
+
+    if (!imageUrl) {
+      return ErrorResponse(res, 400, "imageUrl not found");
     }
 
     // check user present
@@ -26,11 +41,22 @@ export const createEvent = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // uplaod on cloudinary
+    const thumbnailImage = await thumbnailToCloudinary(
+      imageUrl,
+      process.env.FOLDER_NAME
+    );
+
+    if (!thumbnailImage) {
+      return ErrorResponse(res, 404, "upload failed");
+    }
+
     // create event
     const data = await Event.create({
       user: isUser._id,
-      availability,
-      location,
+      availability: parseData.data.availability,
+      location: parseData.data.location,
+      imageUrl: thumbnailImage.secure_url,
     });
 
     // update user
@@ -51,118 +77,106 @@ export const createEvent = async (req: Request, res: Response) => {
   }
 };
 
-// createSection
-export const createSection = async (req: Request, res: Response) => {
+// createService
+export const createService = async (req: Request, res: Response): Promise<any> => {
   try {
-    // fetch data
     const userId = req.user?.id;
-    const { name, eventId } = req.body;
+    const { eventId, serviceData } = req.body;
+    console.log("serviceData is:", serviceData);
+    console.log("req.body", req.body);
 
-    // validation
-    if (!name || !eventId) {
-      return ErrorResponse(res, 400, "credentials not found");
+    // Validate input
+    if (!userId || !eventId || !Array.isArray(serviceData) || serviceData.length === 0) {
+      return ErrorResponse(res, 400, "All fields are required and serviceData must be a non-empty array");
     }
 
-    // check user,event,category present
-    const [isUser, isEvent, isCategory] = await Promise.all([
-      User.findOne({ _id: userId }),
-      Event.findOne({ _id: eventId }),
-      Category.findOne({ name: name }),
+    // Validate ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(eventId)) {
+      return ErrorResponse(res, 400, "Invalid userId or eventId");
+    }
+
+    // Fetch user and event in parallel
+    const [isUser, isEvent] = await Promise.all([
+      User.findById(userId).select("_id"),
+      Event.findById(eventId).select("_id service"),
     ]);
 
-    // validation
-    if (!isUser || !isEvent || !isCategory) {
-      return res.status(404).json({ message: "user/category/event not found" });
+    if (!isUser || !isEvent) {
+      return ErrorResponse(res, 404, "User or Event not found");
     }
 
-    // create section
-    const data = await Section.create({
-      name: isCategory._id,
-      event: isEvent._id,
-    });
+    // Process service data
+    const sections = await Promise.all(
+      serviceData.map(async (categoryData: any) => {
+        if (!categoryData.id || !mongoose.Types.ObjectId.isValid(categoryData.id)) {
+          throw new Error("Invalid category ID");
+        }
 
-    // update event
-    await Event.findByIdAndUpdate(
-      { _id: isEvent._id },
-      {
-        $push: {
-          sections: data._id,
-        },
-      },
-      { new: true }
+        // Fetch category
+        const category = await Category.findById(categoryData.id).select("_id");
+        if (!category) {
+          throw new Error("Category not found");
+        }
+
+        // Create section
+        const section = await Section.create({ categoryId: category._id });
+
+        // Handle subcategories
+        if (Array.isArray(categoryData.subCategories) && categoryData.subCategories.length > 0) {
+          const subCategoryIds = categoryData.subCategories
+            .map((sub: any) => (mongoose.Types.ObjectId.isValid(sub.id) ? new mongoose.Types.ObjectId(sub.id) : null))
+            .filter((id: any) => id !== null);
+
+          const validSubCategories = await SubCategory.find({ _id: { $in: subCategoryIds } }).select("_id");
+
+          if (validSubCategories.length !== subCategoryIds.length) {
+            throw new Error("One or more subcategories are invalid");
+          }
+
+          // Create subSections
+          const subSections = await Promise.all(
+            validSubCategories.map(async (sub: any) => {
+              return SubSection.create({
+                subCategoryId: sub._id,
+                about: categoryData.subCategories.find((s: any) => s.id === sub._id.toString())?.about,
+                price: categoryData.subCategories.find((s: any) => s.id === sub._id.toString())?.price,
+              });
+            })
+          );
+
+          // Update section with subSections
+          await Section.findByIdAndUpdate(section._id, {
+            $push: { subSections: { $each: subSections.map((s) => s._id) } },
+          });
+        }
+
+        return section;
+      })
     );
 
-    return SuccessResponse(res, 201, "section created successfully", data);
-  } catch (error) {
-    console.log(error);
-    return ErrorResponse(res, 500, "Internal Server Error");
-  }
-};
-
-// createSubSection
-export const createSubSection = async (req: Request, res: Response) => {
-  try {
-    // fetch data
-    const userId = req.user?.id;
-    const { name, price, sectionId, about, eventId } = req.body;
-
-    // validation
-    if (!name || !price || !sectionId || !about || !eventId) {
-      return ErrorResponse(res, 400, "credentials not found");
-    }
-
-    // check user,event,category,section present
-    const [isUser, isSubCategory, isSection, isEvent] = await Promise.all([
-      User.findOne({ _id: userId }),
-      SubCategory.findOne({ name: name }),
-      Section.findOne({ _id: sectionId }),
-      Event.findOne({ _id: eventId }),
-    ]);
-
-    // validation
-    if (!isUser || !isSubCategory || !isSection || !isEvent) {
-      return res.status(404).json({ message: "user/category/event not found" });
-    }
-
-    // create sub-sections
-    const data = await SubSection.create({
-      name: isSubCategory._id,
-      price: price,
-      section: isSection._id,
-      about: about,
+    // Create service entry
+    const service = await Service.create({
+      userId: isUser._id,
+      eventId: isEvent._id,
+      sections: sections.map((section) => section._id),
     });
 
-    // update section and sub-category
-    await Promise.all([
-      Section.findByIdAndUpdate(
-        { _id: isSection._id },
-        {
-          $push: {
-            subSections: data._id,
-          },
-        },
-        { new: true }
-      ),
-      SubCategory.findByIdAndUpdate(
-        { _id: isSubCategory._id },
-        {
-          $push: {
-            events: isEvent._id,
-          },
-        },
-        { new: true }
-      ),
-    ]);
+    // Update event with the new service ID
+    await Event.findByIdAndUpdate(isEvent._id, { $push: { service: service._id } });
 
-    return SuccessResponse(res, 201, "sub-section created successfully", data);
-  } catch (error) {
-    console.log(error);
-    return ErrorResponse(res, 500, "Internal Server Error");
+    return SuccessResponse(res, 201, "Event service created successfully", { service });
+
+  } catch (error: any) {
+    console.error("Error in createService:", error.message);
+    return ErrorResponse(res, 500, error.message || "Internal Server Error");
   }
 };
 
 // published/draft
-export const PublishedDraft = async (req: Request, res: Response) => {
+export const PublishedDraft = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     // fetch data
     const userId = req.user?.id;
@@ -256,215 +270,54 @@ export const markAsActiveInactive = async (req: Request, res: Response) => {
 // editEvent
 export const editEvent = async (req: Request, res: Response) => {
   try {
-    // fetch data
-    const updates = req.body;
-    const eventId = req.body.eventId;
+    const userId = req.user?.id;
+    const { eventId, ...updates } = req.body;
 
     // validation
-    if (!eventId) {
-      return ErrorResponse(res, 400, "all fields are required");
-    }
-
-    // check if event/user exists
-    const isEvent: any = await Event.findById(eventId);
-    if (!isEvent) {
-      return ErrorResponse(res, 404, "Event not found");
-    }
-
-    // updates field which is present
-    for (const key in updates) {
-      if (updates.hasOwnProperty(key)) {
-        isEvent[key] = updates[key];
-      }
-    }
-
-    const data = await isEvent.save();
-
-    // return res
-    return SuccessResponse(res, 200, "Event edited successfully", data);
-  } catch (error) {
-    console.log(error);
-    return ErrorResponse(res, 500, "Internal server error");
-  }
-};
-
-// editSection
-export const editSection = async (req: Request, res: Response) => {
-  try {
-    // fetch data
-    const { name, sectionId } = req.body;
-
-    // validation
-    if (!name || !sectionId) {
+    if (!eventId || !userId) {
       return ErrorResponse(res, 400, "All fields are required");
     }
 
-    // check is category/section exist
-    const [isCategory, isSection] = await Promise.all([
-      Category.findOne({ name: name }),
-      Section.findOne({ _id: sectionId }),
+    // Fetch event and user in parallel
+    const [isEvent, isUser] = await Promise.all([
+      Event.findById(eventId),
+      User.findById(userId),
     ]);
 
     // validation
-    if (!isCategory || !isSection) {
-      return ErrorResponse(res, 404, "All fields are required");
-    }
+    if (!isEvent) return ErrorResponse(res, 404, "Event not found");
+    if (!isUser) return ErrorResponse(res, 404, "User not found");
 
-    // update
-    isSection.name = isCategory._id;
-    const data = await isSection.save();
-
-    // return res
-    return SuccessResponse(res, 200, "Section edited successfully", data);
-  } catch (error) {
-    console.log(error);
-    return ErrorResponse(res, 500, "Internal server error");
-  }
-};
-
-// editSubSection
-export const editSubSection = async (req: Request, res: Response) => {
-  try {
-    // fetch data
-    const { name, about, price, subSectionId } = req.body;
-
-    // validation
-    if (!subSectionId) {
-      return ErrorResponse(res, 400, "All fields are required");
-    }
-
-    // check is category exist
-    const [isSubCategory, isSubSection] = await Promise.all([
-      SubCategory.findOne({ name: name }),
-      SubSection.findOne({ _id: subSectionId }),
-    ]);
-
-    // validation
-    if (!isSubCategory || !isSubSection) {
-      return ErrorResponse(res, 404, "All fields are required");
-    }
-
-    // update
-    if (name) {
-      isSubSection.name = isSubCategory._id;
-    }
-    if (about) {
-      isSubSection.about = about;
-    }
-    if (price) {
-      isSubSection.price = price;
-    }
-    const data = await isSubSection.save();
-
-    // return res
-    return SuccessResponse(res, 200, "Subsection edited successfully", data);
-  } catch (error) {
-    console.log(error);
-    return ErrorResponse(res, 500, "Internal server error");
-  }
-};
-
-// infiniteEvent with filter -> Homepage card
-export const infiniteEventsWithFilter = async (req: Request, res: Response) => {
-  try {
-    // fetch data
-    const { limit = 10, cursor, filters } = req.body;
-    const limitNumber = parseInt(limit as string, 10);
-
-    // validation
-    if (isNaN(limitNumber) || limitNumber < 1 || !filters) {
-      return res.status(400).json({ message: "Invalid pagination parameters" });
-    }
-
-    // make query
-    const query: any = {};
-
-    // make cursor
-    if (cursor) {
-      if (mongoose.isValidObjectId(cursor)) {
-        query._id = { $lt: new mongoose.Types.ObjectId(cursor) };
-      } else {
-        return ErrorResponse(res, 400, "Invalid cursor");
-      }
-    }
-
-    // apply filters
-    if (filters.isActive) {
-      query.isActive = filters.isActive;
-    }
-    if (filters.username) {
-      query["userData.username"] = filters.username;
-    }
-    if (filters.location) {
-      query.location = filters.location;
-    }
-
-    // pipeline
-    const data = await Event.aggregate([
-      // stage 1 -> join event -> user
-      {
-        $lookup: {
-          from: "users",
-          localField: "user",
-          foreignField: "_id",
-          as: "userData",  // output field name
-        },
-      },
-      { $unwind: "$userData" }, // convert userData from array into object
-
-      // stage 2 -> join user -> ratingAndReviews
-      {
-        $lookup: {
-          from: "ratings",
-          localField: "userData.ratingAndReviews",
-          foreignField: "_id",
-          as: "ratingAndReviewsData",
-        },
-      },
-
-      // calculate highest rating
-      {
-        $addFields: {
-          highestRating: { $max: "$ratingAndReviewsData.rating" }
-        }
-      },
-
-      // match filters
-      {
-        $match: query
-      },
-
-      // sort
-      {
-        $sort: {
-          highestRating: -1,
-          createdAt: -1
-        }
-      },
-
-      // limit
-      {
-        $limit: limitNumber
+    // Handle image upload if present
+    if (req.files?.imageUrl) {
+      const imageFile = req.files.imageUrl as fileUpload.UploadedFile;
+      if (!imageFile) {
+        return ErrorResponse(res, 400, "Invalid image file");
       }
 
-      // project to select which fields are needed
-    ]);
+      const uploadedImage = await thumbnailToCloudinary(
+        imageFile,
+        process.env.FOLDER_NAME!
+      );
 
-    // nextCursor and hasmore
-    const hasmore = data.length === limitNumber;
-    const nextCursor = data.length > 0 ? data[data.length-1]._id : null;
-
-    // return res
-    return SuccessResponse(res, 200, "Events fetched successfully", {
-      pagination: {
-        hasmore,
-        nextCursor,
-        data
+      if (!uploadedImage) {
+        return ErrorResponse(res, 500, "Image upload failed");
       }
-    });
 
+      isEvent.imageUrl = uploadedImage.secure_url;
+    }
+
+    // Update event fields dynamically
+    const allowFields = ["availability", "location", "status"];
+    const filteredUpdates = _.pick(updates, allowFields);
+    Object.assign(isEvent, filteredUpdates);
+
+    // Save event
+    const updatedEvent = await isEvent.save();
+
+    return SuccessResponse(res, 200, "Event edited successfully", updatedEvent);
   } catch (error) {
-    console.log(error);
+    console.error("Error editing event:", error);
     return ErrorResponse(res, 500, "Internal server error");
   }
 };
@@ -496,10 +349,10 @@ export const eventOfParticularUser = async (req: Request, res: Response) => {
           from: "users",
           localField: "user",
           foreignField: "_id",
-          as: "userData"
-        }
+          as: "userData",
+        },
       },
-      {$unwind: "userData"},
+      { $unwind: "userData" },
 
       // stage 2 -> join user + rating
       {
@@ -507,15 +360,15 @@ export const eventOfParticularUser = async (req: Request, res: Response) => {
           from: "ratings",
           localField: "userData.ratingAndReviews",
           foreignField: "_id",
-          as: "userData.ratingData"
-        }
+          as: "userData.ratingData",
+        },
       },
 
       // stage 3 -> calculate avg rating
       {
         $addFields: {
           avgRating: { $avg: "$userData.ratingData.rating" },
-        }
+        },
       },
 
       // stage 4 -> categories
@@ -524,8 +377,8 @@ export const eventOfParticularUser = async (req: Request, res: Response) => {
           from: "sections",
           localField: "sections",
           foreignField: "_id",
-          as: "sectionData" 
-        }
+          as: "sectionData",
+        },
       },
 
       // stage 5 -> sub-categories
@@ -534,24 +387,163 @@ export const eventOfParticularUser = async (req: Request, res: Response) => {
           from: "subSections",
           localField: "sectionData.subSections",
           foreignField: "_id",
-          as: "subSectionData"
-        }
+          as: "subSectionData",
+        },
       },
 
       // match
       {
         $match: {
-          _id: eventId
-        }
-      }
+          _id: eventId,
+        },
+      },
 
       // $project
     ]);
 
     // return res
-    return SuccessResponse(res, 200, "Events of this user fetched successfully", data);
+    return SuccessResponse(
+      res,
+      200,
+      "Events of this user fetched successfully",
+      data
+    );
   } catch (error) {
     console.log(error);
+    return ErrorResponse(res, 500, "Internal server error");
+  }
+};
+
+// infiniteEventsWithFilter
+export const infiniteEventsWithFilterHomepage = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    // Extract pagination and filters
+    const { limit, cursor, ...filters } = req.body;
+    const parsedLimit = Number(limit);
+
+    if (!parsedLimit || parsedLimit < 1) {
+      return ErrorResponse(res, 400, "Invalid pagination limit");
+    }
+
+    // Build the match query
+    const matchQuery: any = {};
+
+    if (cursor) {
+      if (mongoose.isValidObjectId(cursor)) {
+        matchQuery._id = { $lt: new mongoose.Types.ObjectId(cursor) };
+      } else {
+        return ErrorResponse(res, 400, "Invalid cursor");
+      }
+    }
+    console.log("query",matchQuery);
+    if (filters) {
+      if (filters.isActive !== undefined) matchQuery.isActive = filters.isActive;
+      if (filters.location) matchQuery.location = filters.location;
+    }
+
+    // Aggregation pipeline
+    const pipeline: any[] = [
+      { $match: matchQuery }, // Stage 1: Filter data
+
+      { $sort: { createdAt: -1 } }, // Stage 2: Sort by createdAt (descending)
+
+      { $addFields: { originalId: "$_id" } }, // Preserve _id before lookups
+
+      // Stage 4: Lookup user data
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "userData",
+        },
+      },
+      { $unwind: { path: "$userData", preserveNullAndEmptyArrays: true } },
+
+      // Stage 5: Lookup service data
+      {
+        $lookup: {
+          from: "services",
+          localField: "service",
+          foreignField: "_id",
+          as: "serviceData",
+        },
+      },
+      { $unwind: { path: "$serviceData", preserveNullAndEmptyArrays: true } },
+
+      // Stage 6: Lookup sections
+      {
+        $lookup: {
+          from: "sections",
+          localField: "serviceData.sections",
+          foreignField: "_id",
+          as: "sectionsData",
+        },
+      },
+
+      // Stage 7: Lookup subsections
+      {
+        $lookup: {
+          from: "subsections",
+          localField: "sectionsData.subSections",
+          foreignField: "_id",
+          as: "subSectionsData",
+        },
+      },
+
+      // Stage 8: Lookup subcategories
+      {
+        $lookup: {
+          from: "subcategories",
+          localField: "subSectionsData.subCategoryId",
+          foreignField: "_id",
+          as: "subCategoryData",
+        },
+      },
+
+      // 🔥 Final Sorting to Maintain Order After Lookups
+      {
+        $setWindowFields: {
+          partitionBy: null,
+          sortBy: { originalId: -1 },
+          output: {},
+        },
+      },
+
+      { $limit: parsedLimit }, // Stage 3: Apply limit
+
+      // Stage 9: Projection (select only necessary fields)
+      // {
+      //   $project: {
+      //     _id: 1,
+      //     availability: 1,
+      //     location: 1,
+      //     createdAt: 1,
+      //     "userData.username": 1,
+      //     "sectionsData.name": 1,
+      //     "subSectionsData.name": 1,
+      //     "subCategoryData.name": 1,
+      //     "subCategoryData.imageUrl": 1,
+      //   },
+      // },
+    ];
+
+    // Execute aggregation
+    const events = await Event.aggregate(pipeline);
+
+    // Pagination response
+    return SuccessResponse(res, 200, "Events fetched successfully", {
+      pagination: {
+        hasMore: events.length === parsedLimit,
+        nextCursor: events.length > 0 ? events[events.length - 1]._id : null,
+      },
+      data: events,
+    });
+  } catch (error) {
+    console.error("Error fetching events:", error);
     return ErrorResponse(res, 500, "Internal server error");
   }
 };

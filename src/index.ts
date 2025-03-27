@@ -6,8 +6,16 @@ import compression from "compression";
 import morgan from "morgan";
 import cookieParser from 'cookie-parser';
 import fileUpload from 'express-fileupload';
+
+// routes
 import authRoutes from "./routes/auth.routes";
+import categoryRoutes from "./routes/category.routes";
+import eventRoutes from './routes/event.routes';
+
+
+// dbConnect
 import connectDB from "./config/mongodb";
+import { cloudinaryConnect } from "./config/cloudinary";
 
 dotenv.config(); // Load environment variables
 
@@ -39,9 +47,12 @@ const PORT = process.env.PORT || 5000;
 
 // db
 connectDB();
+cloudinaryConnect();
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/category", categoryRoutes);
+app.use("/api/event", eventRoutes);
 
 // Home route
 app.get("/", (req: Request, res: Response) => {

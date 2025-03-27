@@ -1,6 +1,13 @@
 // import
 import mongoose, { Schema } from "mongoose";
-import { IWallet } from "../types/schema/walletSchema.types";
+
+export interface IWallet {
+    user: mongoose.Types.ObjectId;
+    balance: number;
+    pending: number;
+    referrelBalance: number;
+    transactions: mongoose.Types.ObjectId[];
+}
 
 
 // schema

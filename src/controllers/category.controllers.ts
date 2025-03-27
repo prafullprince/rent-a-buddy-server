@@ -4,9 +4,13 @@ import Category from "../models/category.models";
 import SubCategory from "../models/subcategory.models";
 import mongoose from 'mongoose';
 import Event from "../models/event.models";
+import fileUpload from "express-fileupload";
+import { thumbnailToCloudinary } from "../helper/mediaUpload.helper";
+import dotenv from "dotenv";
+dotenv.config();
 
 // createCategory
-export const createCategory = async (req: Request, res: Response) => {
+export const createCategory = async (req: Request, res: Response): Promise<any> => {
   try {
     // fetch data
     const { name } = req.body;
@@ -38,10 +42,13 @@ export const createCategory = async (req: Request, res: Response) => {
 };
 
 // createSubCategory
-export const createSubCategory = async (req: Request, res: Response) => {
+export const createSubCategory = async (req: Request, res: Response): Promise<any> => {
   try {
     // fetch data
-    const { name, imageUrl, about, categoryId } = req.body;
+    const { name, about, categoryId } = req.body;
+
+    // fetch imageUrl
+    const imageUrl = req.files?.imageUrl as fileUpload.UploadedFile;
 
     // validation
     if (!name || !imageUrl || !about || !categoryId) {
@@ -56,6 +63,12 @@ export const createSubCategory = async (req: Request, res: Response) => {
       return ErrorResponse(res, 404, "Category does not exist");
     }
 
+    // uplaed on cloudinary
+    const imageFile = await thumbnailToCloudinary(imageUrl, process.env.FOLDER_NAME);
+    if (!imageFile) {
+      return ErrorResponse(res, 404, "upload failed");
+    }
+
     // check if subcategory already exists
     const subCategory = await SubCategory.findOne({ name: name });
 
@@ -67,7 +80,7 @@ export const createSubCategory = async (req: Request, res: Response) => {
     // create subcategory
     const data = await SubCategory.create({
       name,
-      imageUrl,
+      imageUrl: imageFile.secure_url,
       about,
       category: categoryData._id,
     });
@@ -223,6 +236,24 @@ export const getSubCategoriesDetailsOfAllEvents = async (
       }
     });
 
+
+  } catch (error) {
+    console.log(error);
+    return ErrorResponse(res, 500, "Internal server error");
+  }
+};
+
+// fetchCategoryAndSubCategory
+export const fetchCategoryAndSubCategory = async (req: Request, res: Response): Promise<any> => { 
+  try {
+    
+    // fetchData
+    const data = await Category.find({}).populate({
+      path: "subCategories",
+      select: "_id name imageUrl about",
+    });
+
+    return SuccessResponse(res, 200, "Category and Subcategory fetched", data);
 
   } catch (error) {
     console.log(error);

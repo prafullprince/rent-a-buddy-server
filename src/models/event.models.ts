@@ -1,5 +1,15 @@
 import mongoose, { Schema } from "mongoose";
-import { IEvent } from "../types/schema/eventSchema.types";
+
+
+export interface IEvent {
+    availability: string;
+    location: string;
+    user: mongoose.Types.ObjectId;
+    service: mongoose.Types.ObjectId;
+    status: string;
+    isActive: boolean;
+    imageUrl: string;
+}
 
 
 const eventSchema = new Schema({
@@ -15,9 +25,9 @@ const eventSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
     },
-    sections: [{
+    service: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Section",
+        ref: "Service",
     }],
     status: {
         type: String,
@@ -27,6 +37,9 @@ const eventSchema = new Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    imageUrl: {
+        type: String,
     }
 });
 
