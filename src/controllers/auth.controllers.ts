@@ -92,8 +92,7 @@ export const authenticate = async (
   }
 };
 
-
-// 
+// fetchUserDetails
 export const getUser = async (
   req: Request,
   res: Response
@@ -101,7 +100,7 @@ export const getUser = async (
   try {
     const userId = req.user?.id;
     console.log("userId",userId)
-    const data = await User.findOne({ _id: userId });
+    const data = await User.findOne({ _id: userId }).select("_id");
     console.log("data",data);
     return SuccessResponse(res,200,"fetched",data);
   } catch (error) {

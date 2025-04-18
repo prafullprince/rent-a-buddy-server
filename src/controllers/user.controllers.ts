@@ -4,8 +4,9 @@ import { ErrorResponse, SuccessResponse } from "../helper/apiResponse.helper";
 import User from "../models/user.models";
 import { thumbnailToCloudinary } from "../helper/mediaUpload.helper";
 
+
 // updateProfilePicture
-export const updateProfilePicture = async (req: Request, res: Response) => {
+export const updateProfilePicture = async (req: Request, res: Response):Promise<any> => {
   try {
     // fetch data
     const userId = req.user?.id;
@@ -53,7 +54,7 @@ export const updateProfilePicture = async (req: Request, res: Response) => {
 
 
 // updateProfile
-export const updateProfile = async (req: Request, res: Response) => {
+export const updateProfile = async (req: Request, res: Response): Promise<any> => {
   try {
     // fetch data
     const userId = req.user?.id;
@@ -88,3 +89,26 @@ export const updateProfile = async (req: Request, res: Response) => {
 };
 
 
+// userDetailsById
+export const userDetailsById = async (req: Request, res: Response): Promise<any> => {
+  try {
+    // fetch data
+    const userId = req.user?.id;
+
+    // validation
+    if (!userId) {
+      return ErrorResponse(res, 400, "All fields are required");
+    }
+
+    // fetch user
+    const user = await User.findById(userId)
+      .select("_id username image phoneNumber")
+    ;
+
+    // return res
+    return SuccessResponse(res, 200, "User fetched successfully", user);
+  } catch (error) {
+    console.log(error);
+    return ErrorResponse(res, 500, "Internal server error");
+  }
+};

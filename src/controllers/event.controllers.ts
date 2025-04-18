@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { ErrorResponse, SuccessResponse } from "../helper/apiResponse.helper";
-import Event from '../models/event.models';
+import Event from "../models/event.models";
 import User from "../models/user.models";
 import Category from "../models/category.models";
 import Section from "../models/section.models";
@@ -11,7 +11,7 @@ import fileUpload from "express-fileupload";
 import { thumbnailToCloudinary } from "../helper/mediaUpload.helper";
 import { createEventBodySchema } from "../zod/request.body.validation";
 import Service from "../models/service.models";
-import _ from 'lodash';
+import _ from "lodash";
 
 // create event TODO: date/time
 export const createEvent = async (
@@ -77,21 +77,91 @@ export const createEvent = async (
   }
 };
 
-// createService
-export const createService = async (req: Request, res: Response): Promise<any> => {
+// editEvent
+export const editEvent = async (req: Request, res: Response): Promise<any> => {
   try {
     const userId = req.user?.id;
+    const { ...updates } = req.body;
+    console.log("eventId", updates.eventId);
+    console.log("updates", updates);
+    // validation
+    if (!updates.eventId || !userId) {
+      return ErrorResponse(res, 400, "All fields are required");
+    }
+
+    // Fetch event and user in parallel
+    const [isEvent, isUser] = await Promise.all([
+      Event.findById(updates.eventId),
+      User.findById(userId),
+    ]);
+
+    // validation
+    if (!isEvent) return ErrorResponse(res, 404, "Event not found");
+    if (!isUser) return ErrorResponse(res, 404, "User not found");
+
+    // Handle image upload if present
+    if (req.files?.imageUrl) {
+      const imageFile = req.files.imageUrl as fileUpload.UploadedFile;
+      if (!imageFile) {
+        return ErrorResponse(res, 400, "Invalid image file");
+      }
+      console.log("imageFile", imageFile);
+      const uploadedImage = await thumbnailToCloudinary(
+        imageFile,
+        process.env.FOLDER_NAME!
+      );
+
+      if (!uploadedImage) {
+        return ErrorResponse(res, 500, "Image upload failed");
+      }
+
+      isEvent.imageUrl = uploadedImage.secure_url;
+    }
+
+    // Update event fields dynamically
+    const allowFields = ["availability", "location", "status"];
+    const filteredUpdates = _.pick(updates, allowFields);
+    Object.assign(isEvent, filteredUpdates);
+
+    // Save event
+    const updatedEvent = await isEvent.save();
+
+    return SuccessResponse(res, 200, "Event edited successfully", updatedEvent);
+  } catch (error) {
+    console.error("Error editing event:", error);
+    return ErrorResponse(res, 500, "Internal server error");
+  }
+};
+
+// createService
+export const createService = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    // fetch data
+    const userId = req.user?.id;
     const { eventId, serviceData } = req.body;
-    console.log("serviceData is:", serviceData);
-    console.log("req.body", req.body);
 
     // Validate input
-    if (!userId || !eventId || !Array.isArray(serviceData) || serviceData.length === 0) {
-      return ErrorResponse(res, 400, "All fields are required and serviceData must be a non-empty array");
+    if (
+      !userId ||
+      !eventId ||
+      !Array.isArray(serviceData) ||
+      serviceData.length === 0
+    ) {
+      return ErrorResponse(
+        res,
+        400,
+        "All fields are required and serviceData must be a non-empty array"
+      );
     }
 
     // Validate ObjectIds
-    if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(eventId)) {
+    if (
+      !mongoose.Types.ObjectId.isValid(userId) ||
+      !mongoose.Types.ObjectId.isValid(eventId)
+    ) {
       return ErrorResponse(res, 400, "Invalid userId or eventId");
     }
 
@@ -108,7 +178,10 @@ export const createService = async (req: Request, res: Response): Promise<any> =
     // Process service data
     const sections = await Promise.all(
       serviceData.map(async (categoryData: any) => {
-        if (!categoryData.id || !mongoose.Types.ObjectId.isValid(categoryData.id)) {
+        if (
+          !categoryData.id ||
+          !mongoose.Types.ObjectId.isValid(categoryData.id)
+        ) {
           throw new Error("Invalid category ID");
         }
 
@@ -122,12 +195,21 @@ export const createService = async (req: Request, res: Response): Promise<any> =
         const section = await Section.create({ categoryId: category._id });
 
         // Handle subcategories
-        if (Array.isArray(categoryData.subCategories) && categoryData.subCategories.length > 0) {
+        if (
+          Array.isArray(categoryData.subCategories) &&
+          categoryData.subCategories.length > 0
+        ) {
           const subCategoryIds = categoryData.subCategories
-            .map((sub: any) => (mongoose.Types.ObjectId.isValid(sub.id) ? new mongoose.Types.ObjectId(sub.id) : null))
+            .map((sub: any) =>
+              mongoose.Types.ObjectId.isValid(sub.id)
+                ? new mongoose.Types.ObjectId(sub.id)
+                : null
+            )
             .filter((id: any) => id !== null);
 
-          const validSubCategories = await SubCategory.find({ _id: { $in: subCategoryIds } }).select("_id");
+          const validSubCategories = await SubCategory.find({
+            _id: { $in: subCategoryIds },
+          }).select("_id");
 
           if (validSubCategories.length !== subCategoryIds.length) {
             throw new Error("One or more subcategories are invalid");
@@ -138,8 +220,12 @@ export const createService = async (req: Request, res: Response): Promise<any> =
             validSubCategories.map(async (sub: any) => {
               return SubSection.create({
                 subCategoryId: sub._id,
-                about: categoryData.subCategories.find((s: any) => s.id === sub._id.toString())?.about,
-                price: categoryData.subCategories.find((s: any) => s.id === sub._id.toString())?.price,
+                about: categoryData.subCategories.find(
+                  (s: any) => s.id === sub._id.toString()
+                )?.about,
+                price: categoryData.subCategories.find(
+                  (s: any) => s.id === sub._id.toString()
+                )?.price,
               });
             })
           );
@@ -162,15 +248,21 @@ export const createService = async (req: Request, res: Response): Promise<any> =
     });
 
     // Update event with the new service ID
-    await Event.findByIdAndUpdate(isEvent._id, { $push: { service: service._id } });
+    await Event.findByIdAndUpdate(isEvent._id, {
+      $push: { service: service._id },
+    });
 
-    return SuccessResponse(res, 201, "Event service created successfully", { service });
-
+    return SuccessResponse(res, 201, "Event service created successfully", {
+      service,
+    });
   } catch (error: any) {
     console.error("Error in createService:", error.message);
     return ErrorResponse(res, 500, error.message || "Internal Server Error");
   }
 };
+
+// editService
+
 
 // published/draft
 export const PublishedDraft = async (
@@ -267,63 +359,12 @@ export const markAsActiveInactive = async (req: Request, res: Response) => {
   }
 };
 
-// editEvent
-export const editEvent = async (req: Request, res: Response) => {
-  try {
-    const userId = req.user?.id;
-    const { eventId, ...updates } = req.body;
-
-    // validation
-    if (!eventId || !userId) {
-      return ErrorResponse(res, 400, "All fields are required");
-    }
-
-    // Fetch event and user in parallel
-    const [isEvent, isUser] = await Promise.all([
-      Event.findById(eventId),
-      User.findById(userId),
-    ]);
-
-    // validation
-    if (!isEvent) return ErrorResponse(res, 404, "Event not found");
-    if (!isUser) return ErrorResponse(res, 404, "User not found");
-
-    // Handle image upload if present
-    if (req.files?.imageUrl) {
-      const imageFile = req.files.imageUrl as fileUpload.UploadedFile;
-      if (!imageFile) {
-        return ErrorResponse(res, 400, "Invalid image file");
-      }
-
-      const uploadedImage = await thumbnailToCloudinary(
-        imageFile,
-        process.env.FOLDER_NAME!
-      );
-
-      if (!uploadedImage) {
-        return ErrorResponse(res, 500, "Image upload failed");
-      }
-
-      isEvent.imageUrl = uploadedImage.secure_url;
-    }
-
-    // Update event fields dynamically
-    const allowFields = ["availability", "location", "status"];
-    const filteredUpdates = _.pick(updates, allowFields);
-    Object.assign(isEvent, filteredUpdates);
-
-    // Save event
-    const updatedEvent = await isEvent.save();
-
-    return SuccessResponse(res, 200, "Event edited successfully", updatedEvent);
-  } catch (error) {
-    console.error("Error editing event:", error);
-    return ErrorResponse(res, 500, "Internal server error");
-  }
-};
 
 // eventOfParticularUser -> eventDetails
-export const eventOfParticularUser = async (req: Request, res: Response) => {
+export const eventDetailsById = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     // fetch data
     const { eventId } = req.body;
@@ -333,73 +374,31 @@ export const eventOfParticularUser = async (req: Request, res: Response) => {
       return ErrorResponse(res, 400, "All fields are required");
     }
 
-    // check if event exist
-    const isEvent = await Event.findOne({ _id: eventId });
-
-    // validation
-    if (!isEvent) {
-      return ErrorResponse(res, 404, "Event not found");
-    }
-
-    // pipeline to getAllDetails of particular event
-    const data = await Event.aggregate([
-      // stage 1 -> join event + user
-      {
-        $lookup: {
-          from: "users",
-          localField: "user",
-          foreignField: "_id",
-          as: "userData",
+    // data
+    const data = await Event.findOne({ _id: eventId })
+      .populate({
+        path: "user",
+        select: "_id username",
+      })
+      .populate({
+        path: "service",
+        populate: {
+          path: "sections",
+          populate: [
+            {
+              path: "categoryId",
+              select: "_id name",
+            },
+            {
+              path: "subSections",
+              populate: {
+                path: "subCategoryId",
+                select: "_id name imageUrl about",
+              },
+            },
+          ],
         },
-      },
-      { $unwind: "userData" },
-
-      // stage 2 -> join user + rating
-      {
-        $lookup: {
-          from: "ratings",
-          localField: "userData.ratingAndReviews",
-          foreignField: "_id",
-          as: "userData.ratingData",
-        },
-      },
-
-      // stage 3 -> calculate avg rating
-      {
-        $addFields: {
-          avgRating: { $avg: "$userData.ratingData.rating" },
-        },
-      },
-
-      // stage 4 -> categories
-      {
-        $lookup: {
-          from: "sections",
-          localField: "sections",
-          foreignField: "_id",
-          as: "sectionData",
-        },
-      },
-
-      // stage 5 -> sub-categories
-      {
-        $lookup: {
-          from: "subSections",
-          localField: "sectionData.subSections",
-          foreignField: "_id",
-          as: "subSectionData",
-        },
-      },
-
-      // match
-      {
-        $match: {
-          _id: eventId,
-        },
-      },
-
-      // $project
-    ]);
+      });
 
     // return res
     return SuccessResponse(
@@ -438,9 +437,8 @@ export const infiniteEventsWithFilterHomepage = async (
         return ErrorResponse(res, 400, "Invalid cursor");
       }
     }
-    console.log("query",matchQuery);
+    console.log("query", matchQuery);
     if (filters) {
-      if (filters.isActive !== undefined) matchQuery.isActive = filters.isActive;
       if (filters.location) matchQuery.location = filters.location;
     }
 
@@ -516,19 +514,20 @@ export const infiniteEventsWithFilterHomepage = async (
       { $limit: parsedLimit }, // Stage 3: Apply limit
 
       // Stage 9: Projection (select only necessary fields)
-      // {
-      //   $project: {
-      //     _id: 1,
-      //     availability: 1,
-      //     location: 1,
-      //     createdAt: 1,
-      //     "userData.username": 1,
-      //     "sectionsData.name": 1,
-      //     "subSectionsData.name": 1,
-      //     "subCategoryData.name": 1,
-      //     "subCategoryData.imageUrl": 1,
-      //   },
-      // },
+      {
+        $project: {
+          _id: 1,
+          availability: 1,
+          location: 1,
+          createdAt: 1,
+          imageUrl: 1,
+          "userData.username": 1,
+          "subSectionsData.price": 1,
+          "subCategoryData.imageUrl": 1,
+          "subCategoryData.name": 1,
+          isActive: 1,
+        },
+      },
     ];
 
     // Execute aggregation
@@ -542,6 +541,251 @@ export const infiniteEventsWithFilterHomepage = async (
       },
       data: events,
     });
+  } catch (error) {
+    console.error("Error fetching events:", error);
+    return ErrorResponse(res, 500, "Internal server error");
+  }
+};
+
+// eventSummary
+export const eventSummary = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    // fetch data
+    const { eventId } = req.body;
+
+    if (!eventId) {
+      return ErrorResponse(res, 400, "All fields are required");
+    }
+
+    // Aggregation pipeline
+    const pipeline: any[] = [
+      { $match: { _id: new mongoose.Types.ObjectId(eventId) } }, // Stage 1: Filter data
+
+      // { $sort: { createdAt: -1 } }, // Stage 2: Sort by createdAt (descending)
+
+      // { $addFields: { originalId: "$_id" } }, // Preserve _id before lookups
+
+      // Stage 4: Lookup user data
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "userData",
+        },
+      },
+      { $unwind: { path: "$userData", preserveNullAndEmptyArrays: true } },
+
+      // Stage 5: Lookup service data
+      {
+        $lookup: {
+          from: "services",
+          localField: "service",
+          foreignField: "_id",
+          as: "serviceData",
+        },
+      },
+      { $unwind: { path: "$serviceData", preserveNullAndEmptyArrays: true } },
+
+      // Stage 6: Lookup sections
+      {
+        $lookup: {
+          from: "sections",
+          localField: "serviceData.sections",
+          foreignField: "_id",
+          as: "sectionsData",
+        },
+      },
+
+      // Stage 7: Lookup subsections
+      {
+        $lookup: {
+          from: "subsections",
+          localField: "sectionsData.subSections",
+          foreignField: "_id",
+          as: "subSectionsData",
+        },
+      },
+
+      // Stage 8: Lookup subcategories
+      {
+        $lookup: {
+          from: "subcategories",
+          localField: "subSectionsData.subCategoryId",
+          foreignField: "_id",
+          as: "subCategoryData",
+        },
+      },
+
+      // 🔥 Final Sorting to Maintain Order After Lookups
+      // {
+      //   $setWindowFields: {
+      //     partitionBy: null,
+      //     sortBy: { originalId: -1 },
+      //     output: {},
+      //   },
+      // },
+
+      // Stage 9: Projection (select only necessary fields)
+      {
+        $project: {
+          _id: 1,
+          availability: 1,
+          location: 1,
+          createdAt: 1,
+          imageUrl: 1,
+          "userData.username": 1,
+          "subSectionsData.price": 1,
+          "subCategoryData.imageUrl": 1,
+          "subCategoryData.name": 1,
+          isActive: 1,
+        },
+      },
+    ];
+
+    // Execute aggregation
+    const events = await Event.aggregate(pipeline);
+
+    // Pagination response
+    return SuccessResponse(res, 200, "Events fetched successfully", {
+      data: events,
+    });
+  } catch (error) {
+    console.error("Error fetching events:", error);
+    return ErrorResponse(res, 500, "Internal server error");
+  }
+};
+
+// eventSummaryOfPartcularUser
+export const eventSummaryOfUser = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    // fetch data
+    const userId = req.user?.id;
+    if (!userId) {
+      return ErrorResponse(res, 400, "All fields are required");
+    }
+
+    // Aggregation pipeline
+    const pipeline: any[] = [
+      { $match: { user: new mongoose.Types.ObjectId(userId) } }, // Stage 1: Filter data
+
+      { $sort: { createdAt: -1 } },
+
+      // Stage 4: Lookup user data
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "userData",
+        },
+      },
+      { $unwind: { path: "$userData", preserveNullAndEmptyArrays: true } },
+
+      // Stage 5: Lookup service data
+      {
+        $lookup: {
+          from: "services",
+          localField: "service",
+          foreignField: "_id",
+          as: "serviceData",
+        },
+      },
+      { $unwind: { path: "$serviceData", preserveNullAndEmptyArrays: true } },
+
+      // Stage 6: Lookup sections
+      {
+        $lookup: {
+          from: "sections",
+          localField: "serviceData.sections",
+          foreignField: "_id",
+          as: "sectionsData",
+        },
+      },
+
+      // Stage 7: Lookup subsections
+      {
+        $lookup: {
+          from: "subsections",
+          localField: "sectionsData.subSections",
+          foreignField: "_id",
+          as: "subSectionsData",
+        },
+      },
+
+      // Stage 8: Lookup subcategories
+      {
+        $lookup: {
+          from: "subcategories",
+          localField: "subSectionsData.subCategoryId",
+          foreignField: "_id",
+          as: "subCategoryData",
+        },
+      },
+
+      { $limit: 1 },
+
+      // Stage 9: Projection (select only necessary fields)
+      {
+        $project: {
+          _id: 1,
+          availability: 1,
+          location: 1,
+          createdAt: 1,
+          imageUrl: 1,
+          "userData.username": 1,
+          "subSectionsData.price": 1,
+          "subCategoryData.imageUrl": 1,
+          "subCategoryData.name": 1,
+          isActive: 1,
+        },
+      },
+    ];
+
+    // Execute aggregation
+    const events = await Event.aggregate(pipeline);
+
+    // Pagination response
+    return SuccessResponse(res, 200, "Events fetched successfully", {
+      data: events,
+    });
+  } catch (error) {
+    console.error("Error fetching events:", error);
+    return ErrorResponse(res, 500, "Internal server error");
+  }
+};
+
+// allavailableEvents
+export const allavailableEvents = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const events = await Event.find({ isActive: true })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .populate([
+        { path: "user", select: "_id username" },
+        {
+          path: "service",
+          populate: {
+            path: "sections",
+            populate: [
+              { path: "categoryId", select: "_id name" },
+              { path: "subSections", populate: "_id price" },
+            ],
+          },
+        },
+      ]);
+
+    // Pagination response
+    return SuccessResponse(res, 200, "Events fetched successfully", events);
   } catch (error) {
     console.error("Error fetching events:", error);
     return ErrorResponse(res, 500, "Internal server error");

@@ -10,7 +10,7 @@ import { auth } from '../middleware/auth.middleware';
 
 // routes
 router.post('/login', authenticate);
-router.get('/getUser',auth,getUser);
+router.post('/getUser',auth,getUser);
 
 // export router
 export default router;

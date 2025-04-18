@@ -41,7 +41,7 @@ const eventSchema = new Schema({
     imageUrl: {
         type: String,
     }
-});
+},{timestamps: true});
 
 const Event = mongoose.model<IEvent>("Event",eventSchema);
 export default Event;

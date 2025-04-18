@@ -6,22 +6,64 @@ import compression from "compression";
 import morgan from "morgan";
 import cookieParser from 'cookie-parser';
 import fileUpload from 'express-fileupload';
+import http from 'http';
 
 // routes
 import authRoutes from "./routes/auth.routes";
 import categoryRoutes from "./routes/category.routes";
 import eventRoutes from './routes/event.routes';
-
+import chatRoutes from  "./routes/chat.routes";
+import userRoutes from "./routes/user.routes";
 
 // dbConnect
 import connectDB from "./config/mongodb";
 import { cloudinaryConnect } from "./config/cloudinary";
+import { WebSocketServer } from "ws";
+import { registerUserInChatRoom, requestOrder, sendMessage } from "./controllers/order.controllers";
 
 dotenv.config(); // Load environment variables
 
 
 // Create Express server
 const app = express();
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server });
+
+export const chatRoom = new Map<string, Map<string, WebSocket>>();
+
+// wesocket logic
+wss.on("connection", (socket:any)=>{
+  console.log("connected");
+
+  socket.on("message", (data:any)=>{
+    console.log("data:::", data);
+
+    // parsedData
+    if(!data){
+      return;
+    }
+    const parsedData = JSON.parse(data.toString());
+    console.log("parsedData", parsedData);
+
+    // register user
+    if( parsedData.type === "register" ) {
+      registerUserInChatRoom( parsedData, socket );
+    }
+
+    // sendMessage
+    if( parsedData.type === "sendMessage" ) {
+      sendMessage( parsedData );
+    }
+
+    // requestOrder
+    if( parsedData.type === "requestOrder" ) {
+      console.log("requestOrder");
+      requestOrder( parsedData, socket );
+    }
+
+  })
+
+})
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
@@ -40,7 +82,7 @@ app.use(cookieParser());
 app.use(cors());
 app.use(helmet());
 app.use(compression());
-app.use(morgan("combined")); // Logs requests
+// app.use(morgan("combined")); // Logs requests
 
 // PORT
 const PORT = process.env.PORT || 5000;
@@ -53,6 +95,8 @@ cloudinaryConnect();
 app.use("/api/auth", authRoutes);
 app.use("/api/category", categoryRoutes);
 app.use("/api/event", eventRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/user", userRoutes);
 
 // Home route
 app.get("/", (req: Request, res: Response) => {
@@ -60,6 +104,6 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

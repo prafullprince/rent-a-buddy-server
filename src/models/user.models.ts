@@ -28,6 +28,7 @@ export interface IUser {
     orderHistory: mongoose.Types.ObjectId[];
     ratingAndReviews: mongoose.Types.ObjectId[];
     ethnicity: string;
+    phoneNumber: string;
 }
 
 // schema
@@ -128,7 +129,10 @@ const userSchema:Schema = new Schema({
         type: String,
         enum: ["Indian", "Pakistani", "Bangladeshi", "Chinese", "Other"],
         default: "Indian",
-    }
+    },
+    phoneNumber: {
+        type: String,
+    },
 
 },{timestamps:true});
 
