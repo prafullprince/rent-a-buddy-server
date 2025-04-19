@@ -85,7 +85,7 @@ app.use(compression());
 // app.use(morgan("combined")); // Logs requests
 
 // PORT
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 
 // db
 connectDB();

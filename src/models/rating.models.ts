@@ -1,7 +1,10 @@
 import mongoose, { Schema } from "mongoose";
-import { IEvent } from "../types/schema/eventSchema.types";
-import { IRating } from "../types/schema/ratingSchema.types";
 
+export interface IRating {
+    rating: number;
+    reviews: string;
+    user: mongoose.Types.ObjectId;
+}
 
 const ratingSchema = new Schema({
     rating: {
