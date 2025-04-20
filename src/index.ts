@@ -14,6 +14,7 @@ import categoryRoutes from "./routes/category.routes";
 import eventRoutes from './routes/event.routes';
 import chatRoutes from  "./routes/chat.routes";
 import userRoutes from "./routes/user.routes";
+import paymentRoutes from "./routes/payment.routes";
 
 // dbConnect
 import connectDB from "./config/mongodb";
@@ -97,6 +98,7 @@ app.use("/api/category", categoryRoutes);
 app.use("/api/event", eventRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/payment", paymentRoutes);
 
 // Home route
 app.get("/", (req: Request, res: Response) => {

@@ -41,6 +41,8 @@ export const requestOrder = async (parsedData: any, socket:any) => {
       throw new Error("Bad request");
     }
 
+    // amount vaildation
+
     // checkIsChatExists -> if not create chat
     let chat = await Chat.findOne({ participants: { $all: [sender, receiver] } });
     if (!chat) {
