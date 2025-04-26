@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.fetchOtherUser = exports.fetchOrderHistory = exports.fetchChat = exports.fetchAllMessages = exports.sendMessage = exports.registerUserInChatRoom = exports.removeUserFromChatRoom = exports.requestOrder = void 0;
+exports.fetchOrdersOfChat = exports.acceptOrder = exports.fetchOtherUser = exports.fetchOrderHistory = exports.fetchChat = exports.fetchAllMessages = exports.sendMessage = exports.registerUserInChatRoom = exports.removeUserFromChatRoom = exports.requestOrder = exports.markAsRead = exports.unseenMessages = void 0;
 const apiResponse_helper_1 = require("../helper/apiResponse.helper");
 const user_models_1 = __importDefault(require("../models/user.models"));
 const event_models_1 = __importDefault(require("../models/event.models"));
@@ -20,6 +20,74 @@ const chat_models_1 = __importDefault(require("../models/chat.models"));
 const order_models_1 = __importDefault(require("../models/order.models"));
 const index_1 = require("../index");
 const message_models_1 = __importDefault(require("../models/message.models"));
+// unseenMessages
+const unseenMessages = (parsedData, socket) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // validation
+        if (!(parsedData === null || parsedData === void 0 ? void 0 : parsedData.payload)) {
+            throw new Error("Invalid payload structure");
+        }
+        console.log("parsedData", parsedData);
+        // fetch data
+        const { userId } = parsedData.payload;
+        // validation
+        if (!userId) {
+            throw new Error("userId is required");
+        }
+        const user = yield user_models_1.default.findById(userId);
+        if (!user) {
+            throw new Error("User not found");
+        }
+        // find allmessage of user and update isSeen to true of receiver
+        const messages = yield message_models_1.default.find({ receiver: userId, isSeen: false });
+        // send message length to client
+        socket.send(JSON.stringify({
+            type: "numOfUnseenMessages",
+            payload: {
+                totalMessages: messages.length,
+            }
+        }));
+        return;
+    }
+    catch (error) {
+        console.log(error);
+        return;
+    }
+});
+exports.unseenMessages = unseenMessages;
+// markAsRead
+const markAsRead = (parsedData, socket) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // validation
+        if (!(parsedData === null || parsedData === void 0 ? void 0 : parsedData.payload)) {
+            throw new Error("Invalid payload structure");
+        }
+        // fetch data
+        const { chatId, userId } = parsedData.payload;
+        // validation
+        if (!chatId || !userId) {
+            throw new Error("Invalid payload structure");
+        }
+        // chatRoom
+        if (!index_1.chatRoom.get(chatId)) {
+            index_1.chatRoom.set(chatId, new Map());
+        }
+        // participants
+        const participants = index_1.chatRoom.get(chatId);
+        participants === null || participants === void 0 ? void 0 : participants.set(userId, socket);
+        // find allmessage of chat and update isSeen to true of receiver
+        const messages = yield message_models_1.default.find({ chatId: chatId, receiver: userId });
+        if (messages.length > 0) {
+            yield message_models_1.default.updateMany({ chatId: chatId, receiver: userId }, { $set: { isSeen: true } });
+        }
+        return;
+    }
+    catch (error) {
+        console.log(error);
+        return;
+    }
+});
+exports.markAsRead = markAsRead;
 // request order
 const requestOrder = (parsedData, socket) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x;
@@ -50,6 +118,7 @@ const requestOrder = (parsedData, socket) => __awaiter(void 0, void 0, void 0, f
         if (!fromUser || !toUser || !isEvent) {
             throw new Error("Bad request");
         }
+        // amount vaildation
         // checkIsChatExists -> if not create chat
         let chat = yield chat_models_1.default.findOne({ participants: { $all: [sender, receiver] } });
         if (!chat) {
@@ -79,10 +148,11 @@ const requestOrder = (parsedData, socket) => __awaiter(void 0, void 0, void 0, f
             chatId: chat === null || chat === void 0 ? void 0 : chat._id,
             text: parsedData.payload.formData,
             type: "order",
+            order: order._id,
         });
         yield message.save();
         // update chat with the new message
-        const updatedChat = yield chat_models_1.default.findByIdAndUpdate(chat === null || chat === void 0 ? void 0 : chat._id, { $push: { message: message._id } }, { new: true });
+        yield chat_models_1.default.findByIdAndUpdate(chat === null || chat === void 0 ? void 0 : chat._id, { $push: { message: message._id } }, { new: true });
         // update chatRoom
         if (!index_1.chatRoom.get(chat === null || chat === void 0 ? void 0 : chat._id.toString())) {
             index_1.chatRoom.set(chat === null || chat === void 0 ? void 0 : chat._id.toString(), new Map());
@@ -287,7 +357,7 @@ const fetchChat = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         })
             .populate({
             path: "message",
-            select: "_id text",
+            select: "_id text isSeen receiver",
         });
         // return res
         return (0, apiResponse_helper_1.SuccessResponse)(res, 200, "Chats fetched successfully", data);
@@ -344,3 +414,128 @@ const fetchOtherUser = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.fetchOtherUser = fetchOtherUser;
+// acceptOrder
+const acceptOrder = (parsedData, socket) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    try {
+        // validation
+        if (!((_a = parsedData === null || parsedData === void 0 ? void 0 : parsedData.payload) === null || _a === void 0 ? void 0 : _a.msgId)) {
+            throw new Error("Invalid payload structure");
+        }
+        // fetch data
+        const { msgId, mark } = parsedData.payload;
+        // validation
+        if (!msgId) {
+            throw new Error("Invalid payload structure");
+        }
+        // fetch message
+        const message = yield message_models_1.default.findById(msgId);
+        // validation
+        if (!message) {
+            throw new Error("Message not found");
+        }
+        // fetch order
+        const order = yield order_models_1.default.findById(message === null || message === void 0 ? void 0 : message.order);
+        // validation
+        if (!order) {
+            throw new Error("Order not found");
+        }
+        // update order
+        yield order_models_1.default.findByIdAndUpdate(order === null || order === void 0 ? void 0 : order._id, {
+            $set: {
+                status: mark,
+            },
+        }, { new: true });
+        // update message
+        yield message_models_1.default.findByIdAndUpdate(message === null || message === void 0 ? void 0 : message._id, {
+            $set: {
+                isSeen: true,
+            },
+        }, { new: true });
+        if (!index_1.chatRoom.get((_b = message === null || message === void 0 ? void 0 : message.chatId) === null || _b === void 0 ? void 0 : _b.toString())) {
+            index_1.chatRoom.set((_c = message === null || message === void 0 ? void 0 : message.chatId) === null || _c === void 0 ? void 0 : _c.toString(), new Map());
+        }
+        const participants = index_1.chatRoom.get((_d = message === null || message === void 0 ? void 0 : message.chatId) === null || _d === void 0 ? void 0 : _d.toString());
+        participants === null || participants === void 0 ? void 0 : participants.set((_e = message === null || message === void 0 ? void 0 : message.sender) === null || _e === void 0 ? void 0 : _e.toString(), socket);
+        participants === null || participants === void 0 ? void 0 : participants.set((_f = message === null || message === void 0 ? void 0 : message.receiver) === null || _f === void 0 ? void 0 : _f.toString(), socket);
+        const senderWs = participants === null || participants === void 0 ? void 0 : participants.get((_g = message === null || message === void 0 ? void 0 : message.sender) === null || _g === void 0 ? void 0 : _g.toString());
+        const receiverWs = participants === null || participants === void 0 ? void 0 : participants.get((_h = message === null || message === void 0 ? void 0 : message.receiver) === null || _h === void 0 ? void 0 : _h.toString());
+        // send response to client
+        senderWs === null || senderWs === void 0 ? void 0 : senderWs.send(JSON.stringify({
+            type: "orderAccepted",
+            payload: {
+                success: true,
+                message: "Your Order accepted, please do payment",
+            }
+        }));
+        // send response to receiver
+        receiverWs === null || receiverWs === void 0 ? void 0 : receiverWs.send(JSON.stringify({
+            type: "orderAccepted",
+            payload: {
+                success: true,
+                message: "Order accepted successfully",
+            }
+        }));
+    }
+    catch (error) {
+        console.log(error);
+        // send response to client
+        // senderWs?.send(
+        //   JSON.stringify({
+        //     type: "orderStatus",
+        //     payload: {
+        //       success: false,
+        //       message: "Order request failed",
+        //     }
+        //   })
+        // )
+        return;
+    }
+});
+exports.acceptOrder = acceptOrder;
+// fetch order of particular chat
+const fetchOrdersOfChat = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // fetch data
+        const { chatId } = req.body;
+        // validation
+        if (!chatId) {
+            return (0, apiResponse_helper_1.ErrorResponse)(res, 400, "All fields are required");
+        }
+        // fetch chat
+        const chat = yield chat_models_1.default.findById(chatId);
+        // validation
+        if (!chat) {
+            return (0, apiResponse_helper_1.ErrorResponse)(res, 404, "Chat not found");
+        }
+        // fetch orders
+        const data = yield order_models_1.default.find({ chat: chatId });
+        // return res
+        return (0, apiResponse_helper_1.SuccessResponse)(res, 200, "Orders fetched successfully", data);
+    }
+    catch (error) {
+        console.log(error);
+        return (0, apiResponse_helper_1.ErrorResponse)(res, 500, "Internal server error");
+    }
+});
+exports.fetchOrdersOfChat = fetchOrdersOfChat;
+// sendOtp
+exports.sendOtp = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // fetch data
+    }
+    catch (error) {
+        console.log(error);
+        return (0, apiResponse_helper_1.ErrorResponse)(res, 500, "Internal server error");
+    }
+});
+// verify otp
+exports.verifyOtp = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // fetch data
+    }
+    catch (error) {
+        console.log(error);
+        return (0, apiResponse_helper_1.ErrorResponse)(res, 500, "Internal server error");
+    }
+});

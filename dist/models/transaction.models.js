@@ -54,6 +54,6 @@ const transactionSchema = new mongoose_1.Schema({
         enum: ["Pending", "Complete", "Refund"],
         required: true,
     },
-});
+}, { timestamps: true });
 const Transaction = mongoose_1.default.model("Transaction", transactionSchema);
 exports.default = Transaction;

@@ -18,6 +18,7 @@ const category_routes_1 = __importDefault(require("./routes/category.routes"));
 const event_routes_1 = __importDefault(require("./routes/event.routes"));
 const chat_routes_1 = __importDefault(require("./routes/chat.routes"));
 const user_routes_1 = __importDefault(require("./routes/user.routes"));
+const payment_routes_1 = __importDefault(require("./routes/payment.routes"));
 // dbConnect
 const mongodb_1 = __importDefault(require("./config/mongodb"));
 const cloudinary_1 = require("./config/cloudinary");
@@ -53,6 +54,21 @@ wss.on("connection", (socket) => {
             console.log("requestOrder");
             (0, order_controllers_1.requestOrder)(parsedData, socket);
         }
+        // acceptOrder
+        if (parsedData.type === "acceptOrder") {
+            console.log("acceptOrder");
+            (0, order_controllers_1.acceptOrder)(parsedData, socket);
+        }
+        // markAsRead
+        if (parsedData.type === "markAsRead") {
+            console.log("markAsRead");
+            (0, order_controllers_1.markAsRead)(parsedData, socket);
+        }
+        // no of unseenMessages
+        if (parsedData.type === "unseenMessages") {
+            console.log("unseenMessages");
+            (0, order_controllers_1.unseenMessages)(parsedData, socket);
+        }
     });
 });
 // Middleware
@@ -82,6 +98,7 @@ app.use("/api/category", category_routes_1.default);
 app.use("/api/event", event_routes_1.default);
 app.use("/api/chat", chat_routes_1.default);
 app.use("/api/user", user_routes_1.default);
+app.use("/api/payment", payment_routes_1.default);
 // Home route
 app.get("/", (req, res) => {
     res.send("Express + TypeScript Server is Running!");

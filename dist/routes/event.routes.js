@@ -20,5 +20,6 @@ router.get('/getEventSummaryOfUser', auth_middleware_1.auth, auth_middleware_1.i
 router.post('/editEvent', auth_middleware_1.auth, auth_middleware_1.isBuddy, event_controllers_1.editEvent);
 router.post('/getEventById', event_controllers_1.eventDetailsById);
 router.get('/availableEvents', event_controllers_1.allavailableEvents);
+router.post('/markAsActiveInactive', auth_middleware_1.auth, auth_middleware_1.isBuddy, event_controllers_1.markAsActiveInactive);
 // export router
 exports.default = router;

@@ -82,6 +82,19 @@ const orderSchema = new mongoose_1.Schema({
         default: Date.now,
         expires: 60 * 60 * 24 * 7,
     },
+    status: {
+        type: String,
+        enum: ["pending", "accepted", "rejected"],
+        default: "pending",
+    },
+    isActive: {
+        type: Boolean,
+        default: false,
+    },
+    isCompleted: {
+        type: Boolean,
+        default: false,
+    }
 });
 // export
 const Order = mongoose_1.default.model("Order", orderSchema);

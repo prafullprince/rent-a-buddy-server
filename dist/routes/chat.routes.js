@@ -16,5 +16,6 @@ router.post('/fetchChat', auth_middleware_1.auth, order_controllers_1.fetchChat)
 router.post('/fetchAllMessages', auth_middleware_1.auth, order_controllers_1.fetchAllMessages);
 router.post('/fetchOrderHistory', auth_middleware_1.auth, order_controllers_1.fetchOrderHistory);
 router.post('/fetchOtherUser', order_controllers_1.fetchOtherUser);
+router.post('/fetchOrdersOfChat', auth_middleware_1.auth, order_controllers_1.fetchOrdersOfChat);
 // export router
 exports.default = router;

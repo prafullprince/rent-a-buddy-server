@@ -60,6 +60,10 @@ const messageSchema = new mongoose_1.Schema({
         type: String,
         enum: ["text", "order"],
         default: "text",
+    },
+    order: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: "Order",
     }
 }, { timestamps: true });
 // export

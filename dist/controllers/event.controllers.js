@@ -338,7 +338,7 @@ exports.eventDetailsById = eventDetailsById;
 const infiniteEventsWithFilterHomepage = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Extract pagination and filters
-        const _a = req.body, { limit, cursor } = _a, filters = __rest(_a, ["limit", "cursor"]);
+        const { limit, cursor, filters } = req.body;
         const parsedLimit = Number(limit);
         if (!parsedLimit || parsedLimit < 1) {
             return (0, apiResponse_helper_1.ErrorResponse)(res, 400, "Invalid pagination limit");
@@ -353,11 +353,17 @@ const infiniteEventsWithFilterHomepage = (req, res) => __awaiter(void 0, void 0,
                 return (0, apiResponse_helper_1.ErrorResponse)(res, 400, "Invalid cursor");
             }
         }
-        console.log("query", matchQuery);
         if (filters) {
-            if (filters.location)
+            if (filters.location) {
                 matchQuery.location = filters.location;
+            }
+            ;
+            if (filters.isActive) {
+                matchQuery.isActive = filters.isActive;
+            }
         }
+        console.log("filters", filters);
+        console.log("matchQuery", matchQuery);
         // Aggregation pipeline
         const pipeline = [
             { $match: matchQuery }, // Stage 1: Filter data
@@ -373,6 +379,11 @@ const infiniteEventsWithFilterHomepage = (req, res) => __awaiter(void 0, void 0,
                 },
             },
             { $unwind: { path: "$userData", preserveNullAndEmptyArrays: true } },
+            {
+                $match: Object.assign({}, (filters.username && {
+                    "userData.username": { $regex: filters.username, $options: "i" }
+                }))
+            },
             // Stage 5: Lookup service data
             {
                 $lookup: {

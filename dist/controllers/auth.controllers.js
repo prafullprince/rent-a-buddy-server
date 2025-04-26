@@ -42,7 +42,7 @@ const authenticate = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             const token = jsonwebtoken_1.default.sign({ id: isUser === null || isUser === void 0 ? void 0 : isUser._id, email: isUser.email, role: isUser.role }, process.env.JWT_SECRET, { expiresIn: "7d" });
             yield session.commitTransaction();
             session.endSession();
-            return (0, apiResponse_helper_1.SuccessResponse)(res, 200, "user authenticated successfully", token);
+            return (0, apiResponse_helper_1.SuccessResponse)(res, 200, "user authenticated successfully", { token, role: isUser.role });
         }
         // if user doesn't exist - create user
         const newUser = new user_models_1.default({
@@ -72,7 +72,7 @@ const authenticate = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         // commit transaction
         yield session.commitTransaction();
         session.endSession();
-        return (0, apiResponse_helper_1.SuccessResponse)(res, 200, "User loggedin", token);
+        return (0, apiResponse_helper_1.SuccessResponse)(res, 200, "User loggedin", { token, role: newUser.role });
     }
     catch (error) {
         console.log("authenticate internal server error", error);
