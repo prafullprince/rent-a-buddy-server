@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { ErrorResponse } from "../helper/apiResponse.helper";
 import jwt from "jsonwebtoken"
-import { UserPayload } from "../types/global/express";
+import { UserPayload } from "../../express";
 
 
 // auth
