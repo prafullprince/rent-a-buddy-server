@@ -7,6 +7,89 @@ import Order from "../models/order.models";
 import { chatRoom } from "../index";
 import Message from "../models/message.models";
 
+
+// unseenMessages
+export const unseenMessages = async (parsedData: any, socket:any) => {
+  try {
+    // validation
+    if(!parsedData?.payload) {
+      throw new Error("Invalid payload structure");
+    }
+    console.log("parsedData", parsedData);
+
+    // fetch data
+    const { userId } = parsedData.payload;
+
+    // validation
+    if (!userId) {
+      throw new Error("userId is required");
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // find allmessage of user and update isSeen to true of receiver
+    const messages = await Message.find({ receiver: userId, isSeen: false });
+    
+    // send message length to client
+    socket.send(
+      JSON.stringify({
+        type: "numOfUnseenMessages",
+        payload: {
+          totalMessages: messages.length,
+        }
+      })
+    );
+    
+    return;
+  } catch (error) {
+    console.log(error);
+    return;
+  }
+};
+
+// markAsRead
+export const markAsRead = async (parsedData: any, socket:any) => {
+  try {
+    // validation
+    if(!parsedData?.payload) {
+      throw new Error("Invalid payload structure");
+    }
+
+    // fetch data
+    const { chatId, userId } = parsedData.payload;
+
+    // validation
+    if (!chatId || !userId) {
+      throw new Error("Invalid payload structure");
+    }
+
+    // chatRoom
+    if (!chatRoom.get(chatId)) {
+      chatRoom.set(chatId, new Map());
+    }
+
+    // participants
+    const participants = chatRoom.get(chatId);
+    participants?.set(userId, socket);
+
+    // find allmessage of chat and update isSeen to true of receiver
+    const messages = await Message.find({ chatId: chatId, receiver: userId });
+    if (messages.length > 0) {
+      await Message.updateMany(
+        { chatId: chatId, receiver: userId },
+        { $set: { isSeen: true } }
+      );
+    }
+    return;
+  } catch (error) {
+    console.log(error);
+    return;
+  }
+};
+
 // request order
 export const requestOrder = async (parsedData: any, socket:any) => {
   let senderWs: any;
@@ -74,11 +157,12 @@ export const requestOrder = async (parsedData: any, socket:any) => {
       chatId: chat?._id,
       text: parsedData.payload.formData,
       type: "order",
+      order: order._id,
     })
     await message.save();
 
     // update chat with the new message
-    const updatedChat = await Chat.findByIdAndUpdate(
+    await Chat.findByIdAndUpdate(
       chat?._id,
       { $push: { message: message._id } },
       { new: true }
@@ -337,7 +421,7 @@ export const fetchChat = async (req: Request, res: Response): Promise<any> => {
       })
       .populate({
         path: "message",
-        select: "_id text",
+        select: "_id text isSeen receiver",
       });
 
     // return res
@@ -401,6 +485,163 @@ export const fetchOtherUser = async (
     // return res
     return SuccessResponse(res, 200, "User fetched successfully", data);
   } catch (error) {
+    console.log(error);
+    return ErrorResponse(res, 500, "Internal server error");
+  }
+};
+
+// acceptOrder
+export const acceptOrder = async (parsedData: any, socket:any) => {
+  try {
+    // validation
+    if(!parsedData?.payload?.msgId) {
+      throw new Error("Invalid payload structure");
+    }
+
+    // fetch data
+    const { msgId, mark } = parsedData.payload;
+
+    // validation
+    if (!msgId) {
+      throw new Error("Invalid payload structure");
+    }
+
+    // fetch message
+    const message = await Message.findById(msgId);
+
+    // validation
+    if (!message) {
+      throw new Error("Message not found");
+    }
+
+    // fetch order
+    const order = await Order.findById(message?.order);
+
+    // validation
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    // update order
+    await Order.findByIdAndUpdate(
+      order?._id,
+      {
+        $set: {
+          status: mark,
+        },
+      },
+      { new: true }
+    );
+
+    // update message
+    await Message.findByIdAndUpdate(
+      message?._id,
+      {
+        $set: {
+          isSeen: true,
+        },
+      },
+      { new: true }
+    );
+
+
+    if(!chatRoom.get(message?.chatId?.toString())){
+      chatRoom.set(message?.chatId?.toString(), new Map());
+    }
+
+    const participants = chatRoom.get(message?.chatId?.toString());
+
+    participants?.set(message?.sender?.toString(), socket);
+    participants?.set(message?.receiver?.toString(), socket);
+
+    const senderWs = participants?.get(message?.sender?.toString());
+    const receiverWs = participants?.get(message?.receiver?.toString());
+
+    // send response to client
+    senderWs?.send(
+      JSON.stringify({
+        type: "orderAccepted",
+        payload: {
+          success: true,
+          message: "Your Order accepted, please do payment",
+        }
+      })
+    )
+
+    // send response to receiver
+    receiverWs?.send(
+      JSON.stringify({
+        type: "orderAccepted",
+        payload: {
+          success: true,
+          message: "Order accepted successfully",
+        }
+      })
+    )
+
+  } catch (error) {
+    console.log(error);
+    // send response to client
+    // senderWs?.send(
+    //   JSON.stringify({
+    //     type: "orderStatus",
+    //     payload: {
+    //       success: false,
+    //       message: "Order request failed",
+    //     }
+    //   })
+    // )
+    return;
+  }
+};
+
+// fetch order of particular chat
+export const fetchOrdersOfChat = async (req: Request, res: Response): Promise<any> => {
+  try {
+    // fetch data
+    const { chatId } = req.body;
+
+    // validation
+    if (!chatId) {
+      return ErrorResponse(res, 400, "All fields are required");
+    }
+
+    // fetch chat
+    const chat = await Chat.findById(chatId);
+
+    // validation
+    if (!chat) {
+      return ErrorResponse(res, 404, "Chat not found");
+    }
+
+    // fetch orders
+    const data = await Order.find({ chat: chatId });
+
+    // return res
+    return SuccessResponse(res, 200, "Orders fetched successfully", data);
+  } catch (error) {
+    console.log(error);
+    return ErrorResponse(res, 500, "Internal server error");
+  }
+};
+
+// sendOtp
+exports.sendOtp = async (req: Request, res: Response): Promise<any> => {
+  try {
+    // fetch data
+  }
+  catch (error) {
+    console.log(error);
+    return ErrorResponse(res, 500, "Internal server error");
+  }
+};
+
+// verify otp
+exports.verifyOtp = async (req: Request, res: Response): Promise<any> => {
+  try {
+    // fetch data
+  }
+  catch (error) {
     console.log(error);
     return ErrorResponse(res, 500, "Internal server error");
   }

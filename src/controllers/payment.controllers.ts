@@ -6,6 +6,7 @@ import crypto from "crypto";
 import Wallet from "../models/wallet.models";
 import mongoose from "mongoose";
 import Transaction from "../models/transaction.models";
+import Order from "../models/order.models";
 
 // createOrder -> Add money to user wallet
 export const createOrder = async (
@@ -141,74 +142,69 @@ export const verifyPayments = async (
 // sendMoney
 export const sendMoney = async (req: Request, res: Response): Promise<any> => {
   const session = await mongoose.startSession();
-  session.startTransaction();
 
   try {
-    // fetch data
-    const senderId = req.user?.id;
-    const { amount, receiverId } = req.body;
+    const data = await session.withTransaction(async () => {
+      // fetch data
+      const senderId = req.user?.id;
+      const { amount, receiverId, orderId } = req.body;
 
-    // validation
-    if (!amount || !senderId || !receiverId) {
-      await session.abortTransaction();
-      session.endSession();
-      return ErrorResponse(res, 400, "All fields are required");
-    }
+      // validation
+      if (!amount || !senderId || !receiverId) {
+        throw new Error("All fields are required");
+      }
 
-    // check if sender and receiver exist
-    const [isSender, isReceiver] = await Promise.all([
-      User.findOne({ _id: senderId }).session(session),
-      User.findOne({ _id: receiverId }).session(session),
-    ]);
+      // check if sender and receiver exist
+      const [isSender, isReceiver] = await Promise.all([
+        User.findOne({ _id: senderId }).session(session),
+        User.findOne({ _id: receiverId }).session(session),
+      ]);
 
-    // validation
-    if (!isSender || !isReceiver) {
-      await session.abortTransaction();
-      session.endSession();
-      return ErrorResponse(res, 400, "User does not exist");
-    }
+      if (!isSender || !isReceiver) {
+        throw new Error("User does not exist");
+      }
 
-    // check if sender has enough balance
-    const [senderWallet, receiverWallet] = await Promise.all([
-      Wallet.findOne({ user: senderId }).session(session),
-      Wallet.findOne({ user: receiverId }).session(session),
-    ]);
+      // check if sender has enough balance
+      const [senderWallet, receiverWallet] = await Promise.all([
+        Wallet.findOne({ user: senderId }).session(session),
+        Wallet.findOne({ user: receiverId }).session(session),
+      ]);
 
-    if (!senderWallet || senderWallet.balance < amount || !receiverWallet) {
-      await session.abortTransaction();
-      session.endSession();
-      return ErrorResponse(res, 400, "Insufficient balance/ wallet missing");
-    }
+      if (!senderWallet || senderWallet.balance < amount || !receiverWallet) {
+        throw new Error("Insufficient balance or wallet missing");
+      }
 
-    // update wallet pending
-    receiverWallet.pending = receiverWallet.pending + amount;
-    senderWallet.balance = senderWallet.balance - amount;
+      // update balances
+      senderWallet.balance -= amount;
+      receiverWallet.pending += amount;
 
-    // save wallet
-    await Promise.all([
-      senderWallet.save({ session }),
-      receiverWallet.save({ session }),
-    ]);
+      await Promise.all([
+        senderWallet.save({ session }),
+        receiverWallet.save({ session }),
+      ]);
 
-    // create Transaction
-    const transaction = new Transaction({
-      sender: senderId,
-      receiver: receiverId,
-      amount: amount,
-      type: "Pending",
+      // create Transaction
+      const transaction = new Transaction({
+        sender: senderId,
+        receiver: receiverId,
+        amount,
+        type: "Pending",
+      });
+
+      // update order status
+      await Order.findByIdAndUpdate(orderId, { $set: { isActive: true } }, { session });
+
+      return await transaction.save({ session });
     });
 
-    const data = await transaction.save({ session });
-    await session.commitTransaction();
+    // Always end session
     session.endSession();
 
-    // return res
-    return SuccessResponse(res, 200, "Transaction successfull", data);
-  } catch (error) {
-    console.log(error);
-    await session.abortTransaction();
+    return SuccessResponse(res, 200, "Transaction successful", data);
+  } catch (error: any) {
+    console.error("sendMoney error:", error.message || error);
     session.endSession();
-    return ErrorResponse(res, 400, "Error while creating order");
+    return ErrorResponse(res, 400, error.message || "Error while processing transaction");
   }
 };
 

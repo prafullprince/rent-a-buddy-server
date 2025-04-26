@@ -12,7 +12,7 @@ const router = express.Router();
 // routes
 router.post('/createOrder', auth, createOrder);
 router.post('/verifyPayments', auth, verifyPayments);
-router.post('/sendMoney', auth,sendMoney);
+router.post('/sendMoney', auth, sendMoney);
 router.post('/getUserWallet', auth, getUserWallet);
 
 // export router

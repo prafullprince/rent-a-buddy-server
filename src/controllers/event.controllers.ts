@@ -314,7 +314,7 @@ export const PublishedDraft = async (
 };
 
 // mark as active and inactive
-export const markAsActiveInactive = async (req: Request, res: Response) => {
+export const markAsActiveInactive = async (req: Request, res: Response): Promise<any> => {
   try {
     // fetch data
     const userId = req.user?.id;
@@ -420,7 +420,7 @@ export const infiniteEventsWithFilterHomepage = async (
 ): Promise<any> => {
   try {
     // Extract pagination and filters
-    const { limit, cursor, ...filters } = req.body;
+    const { limit, cursor, filters } = req.body;
     const parsedLimit = Number(limit);
 
     if (!parsedLimit || parsedLimit < 1) {
@@ -437,10 +437,18 @@ export const infiniteEventsWithFilterHomepage = async (
         return ErrorResponse(res, 400, "Invalid cursor");
       }
     }
-    console.log("query", matchQuery);
     if (filters) {
-      if (filters.location) matchQuery.location = filters.location;
+      if (filters.location) {
+        matchQuery.location = filters.location;
+      };
+      if (filters.isActive) {
+        matchQuery.isActive = filters.isActive;
+      }
+      
     }
+
+    console.log("filters", filters);
+    console.log("matchQuery", matchQuery);
 
     // Aggregation pipeline
     const pipeline: any[] = [
@@ -460,6 +468,20 @@ export const infiniteEventsWithFilterHomepage = async (
         },
       },
       { $unwind: { path: "$userData", preserveNullAndEmptyArrays: true } },
+
+      {
+        $match: {
+          ...(filters.username && {
+            "userData.username": { $regex: filters.username, $options: "i" }
+          }),
+          // ...(filters.gender && {
+          //   "userData.gender": filters.gender
+          // }),
+          // ...(filters.rating && {
+          //   "userData.rating": filters.rating
+          // }),
+        }
+      },
 
       // Stage 5: Lookup service data
       {

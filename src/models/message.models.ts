@@ -6,6 +6,9 @@ export interface IMessage {
     receiver: mongoose.Types.ObjectId;
     text: string;
     chatId: mongoose.Types.ObjectId;
+    isSeen: boolean;
+    type: string;
+    order: mongoose.Types.ObjectId;
 }
 
 // chat schema
@@ -34,6 +37,10 @@ const messageSchema:Schema = new Schema({
         type: String,
         enum: ["text", "order"],
         default: "text",
+    },
+    order: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Order",
     }
 },{timestamps:true});
 

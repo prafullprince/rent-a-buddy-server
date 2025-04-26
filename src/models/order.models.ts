@@ -12,6 +12,12 @@ export interface IOrder {
     cabFare: number;
     totalPrice: number;
     chat: mongoose.Types.ObjectId;
+    isActive: boolean;
+    isCompleted: boolean;
+    subId: mongoose.Types.ObjectId;
+    unit: number;
+    createdAt: Date;
+    status: string;
 }
 
 // order schema
@@ -62,6 +68,19 @@ const orderSchema:Schema = new Schema({
         default: Date.now,
         expires: 60 * 60 * 24 * 7,
     },
+    status: {
+        type: String,
+        enum: ["pending", "accepted", "rejected"],
+        default: "pending",
+    },
+    isActive: {
+        type: Boolean,
+        default: false,
+    },
+    isCompleted: {
+        type: Boolean,
+        default: false,
+    }
 });
 
 // export

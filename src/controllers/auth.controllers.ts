@@ -42,7 +42,7 @@ export const authenticate = async (
         res,
         200,
         "user authenticated successfully",
-        token
+        {token, role: isUser.role}
       );
     }
 
@@ -82,7 +82,7 @@ export const authenticate = async (
     await session.commitTransaction();
     session.endSession();
 
-    return SuccessResponse(res,200,"User loggedin",token);
+    return SuccessResponse(res,200,"User loggedin",{token,role:newUser.role});
 
   } catch (error) {
     console.log("authenticate internal server error", error);

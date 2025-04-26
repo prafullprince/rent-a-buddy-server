@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
-import morgan from "morgan";
 import cookieParser from 'cookie-parser';
 import fileUpload from 'express-fileupload';
 import http from 'http';
@@ -20,10 +19,9 @@ import paymentRoutes from "./routes/payment.routes";
 import connectDB from "./config/mongodb";
 import { cloudinaryConnect } from "./config/cloudinary";
 import { WebSocketServer } from "ws";
-import { registerUserInChatRoom, requestOrder, sendMessage } from "./controllers/order.controllers";
+import { acceptOrder, markAsRead, registerUserInChatRoom, requestOrder, sendMessage, unseenMessages } from "./controllers/order.controllers";
 
 dotenv.config(); // Load environment variables
-
 
 // Create Express server
 const app = express();
@@ -60,6 +58,24 @@ wss.on("connection", (socket:any)=>{
     if( parsedData.type === "requestOrder" ) {
       console.log("requestOrder");
       requestOrder( parsedData, socket );
+    }
+
+    // acceptOrder
+    if( parsedData.type === "acceptOrder" ) {
+      console.log("acceptOrder");
+      acceptOrder( parsedData, socket );
+    }
+
+    // markAsRead
+    if( parsedData.type === "markAsRead" ) {
+      console.log("markAsRead");
+      markAsRead( parsedData, socket );
+    }
+
+    // no of unseenMessages
+    if( parsedData.type === "unseenMessages" ) {
+      console.log("unseenMessages");
+      unseenMessages( parsedData, socket );
     }
 
   })

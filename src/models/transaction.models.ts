@@ -21,7 +21,7 @@ const transactionSchema = new Schema({
         enum: ["Pending", "Complete", "Refund"],
         required: true,
     },
-});
+} , { timestamps: true});
 
 const Transaction = mongoose.model<any>("Transaction", transactionSchema);
 export default Transaction;
