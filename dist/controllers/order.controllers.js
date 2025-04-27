@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.fetchOrdersOfChat = exports.acceptOrder = exports.fetchOtherUser = exports.fetchOrderHistory = exports.fetchChat = exports.fetchAllMessages = exports.sendMessage = exports.registerUserInChatRoom = exports.removeUserFromChatRoom = exports.requestOrder = exports.markAsRead = exports.unseenMessages = void 0;
+exports.fetchOrdersOfChat = exports.acceptOrder = exports.fetchOtherUser = exports.fetchOrderHistory = exports.fetchChat = exports.fetchAllMessages = exports.sendMessage = exports.registerUserInChatRoom = exports.removeUserFromChatRoom = exports.requestOrder = exports.markAsRead = exports.unseenMessages = exports.fetchUserChats = void 0;
 const apiResponse_helper_1 = require("../helper/apiResponse.helper");
 const user_models_1 = __importDefault(require("../models/user.models"));
 const event_models_1 = __importDefault(require("../models/event.models"));
@@ -20,6 +20,51 @@ const chat_models_1 = __importDefault(require("../models/chat.models"));
 const order_models_1 = __importDefault(require("../models/order.models"));
 const index_1 = require("../index");
 const message_models_1 = __importDefault(require("../models/message.models"));
+// fetchUserChats
+const fetchUserChats = (parsedData, socket) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // validation
+        if (!(parsedData === null || parsedData === void 0 ? void 0 : parsedData.payload)) {
+            throw new Error("Invalid payload structure");
+        }
+        // fetch data
+        const { userId } = parsedData.payload;
+        // validation
+        if (!userId) {
+            throw new Error("userId is required");
+        }
+        const user = yield user_models_1.default.findById(userId);
+        if (!user) {
+            throw new Error("User not found");
+        }
+        // fetch chats
+        const chats = yield chat_models_1.default.find({ participants: userId })
+            .populate({
+            path: "participants",
+            select: "_id username image",
+        })
+            .populate({
+            path: "message",
+            select: "_id text isSeen receiver",
+        });
+        console.log("first", chats);
+        // send message to client
+        socket.send(JSON.stringify({
+            type: "fetchUserAllChats",
+            payload: {
+                success: true,
+                message: "User chats fetched successfully",
+                data: chats,
+            }
+        }));
+        return;
+    }
+    catch (error) {
+        console.log(error);
+        return;
+    }
+});
+exports.fetchUserChats = fetchUserChats;
 // unseenMessages
 const unseenMessages = (parsedData, socket) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -323,7 +368,7 @@ const fetchAllMessages = (req, res) => __awaiter(void 0, void 0, void 0, functio
             return (0, apiResponse_helper_1.ErrorResponse)(res, 404, "Chat not found");
         }
         // fetch messages
-        const data = yield message_models_1.default.find({ chatId: chatId }).lean();
+        const data = yield message_models_1.default.find({ chatId: chatId }).populate("order").lean();
         // return res
         return (0, apiResponse_helper_1.SuccessResponse)(res, 200, "Messages fetched successfully", data);
     }

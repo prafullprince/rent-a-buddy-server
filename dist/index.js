@@ -69,6 +69,11 @@ wss.on("connection", (socket) => {
             console.log("unseenMessages");
             (0, order_controllers_1.unseenMessages)(parsedData, socket);
         }
+        // fetchAllChat
+        if (parsedData.type === "fetchAllChat") {
+            console.log("fetchAllChat");
+            (0, order_controllers_1.fetchUserChats)(parsedData, socket);
+        }
     });
 });
 // Middleware

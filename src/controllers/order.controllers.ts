@@ -8,6 +8,57 @@ import { chatRoom } from "../index";
 import Message from "../models/message.models";
 
 
+// fetchUserChats
+export const fetchUserChats = async (parsedData: any, socket:any) => {
+  try {
+    // validation
+    if(!parsedData?.payload) {
+      throw new Error("Invalid payload structure");
+    }
+
+    // fetch data
+    const { userId } = parsedData.payload;
+
+    // validation
+    if (!userId) {
+      throw new Error("userId is required");
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // fetch chats
+    const chats = await Chat.find({ participants: userId })
+      .populate({
+        path: "participants",
+        select: "_id username image",
+      })
+      .populate({
+        path: "message",
+        select: "_id text isSeen receiver",
+      });
+      console.log("first", chats);
+    // send message to client
+    socket.send(
+      JSON.stringify({
+        type: "fetchUserAllChats",
+        payload: {
+          success: true,
+          message: "User chats fetched successfully",
+          data: chats,
+        }
+      })
+    );
+    return;
+
+  } catch (error) {
+    console.log(error);
+    return;
+  }
+};
+
 // unseenMessages
 export const unseenMessages = async (parsedData: any, socket:any) => {
   try {
@@ -384,8 +435,8 @@ export const fetchAllMessages = async (
     }
 
     // fetch messages
-    const data = await Message.find({ chatId: chatId }).lean();
-
+    const data = await Message.find({ chatId: chatId }).populate("order").lean();
+    
     // return res
     return SuccessResponse(res, 200, "Messages fetched successfully", data);
   } catch (error) {

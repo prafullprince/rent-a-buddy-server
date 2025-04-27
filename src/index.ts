@@ -19,7 +19,7 @@ import paymentRoutes from "./routes/payment.routes";
 import connectDB from "./config/mongodb";
 import { cloudinaryConnect } from "./config/cloudinary";
 import { WebSocketServer } from "ws";
-import { acceptOrder, markAsRead, registerUserInChatRoom, requestOrder, sendMessage, unseenMessages } from "./controllers/order.controllers";
+import { acceptOrder, fetchUserChats, markAsRead, registerUserInChatRoom, requestOrder, sendMessage, unseenMessages } from "./controllers/order.controllers";
 
 dotenv.config(); // Load environment variables
 
@@ -76,6 +76,12 @@ wss.on("connection", (socket:any)=>{
     if( parsedData.type === "unseenMessages" ) {
       console.log("unseenMessages");
       unseenMessages( parsedData, socket );
+    }
+
+    // fetchAllChat
+    if( parsedData.type === "fetchAllChat" ) {
+      console.log("fetchAllChat");
+      fetchUserChats( parsedData, socket );
     }
 
   })
