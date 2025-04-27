@@ -7,12 +7,11 @@ import Order from "../models/order.models";
 import { chatRoom } from "../index";
 import Message from "../models/message.models";
 
-
 // fetchUserChats
-export const fetchUserChats = async (parsedData: any, socket:any) => {
+export const fetchUserChats = async (parsedData: any, socket: any) => {
   try {
     // validation
-    if(!parsedData?.payload) {
+    if (!parsedData?.payload) {
       throw new Error("Invalid payload structure");
     }
 
@@ -39,7 +38,7 @@ export const fetchUserChats = async (parsedData: any, socket:any) => {
         path: "message",
         select: "_id text isSeen receiver",
       });
-      console.log("first", chats);
+    console.log("first", chats);
     // send message to client
     socket.send(
       JSON.stringify({
@@ -48,11 +47,10 @@ export const fetchUserChats = async (parsedData: any, socket:any) => {
           success: true,
           message: "User chats fetched successfully",
           data: chats,
-        }
+        },
       })
     );
     return;
-
   } catch (error) {
     console.log(error);
     return;
@@ -60,10 +58,10 @@ export const fetchUserChats = async (parsedData: any, socket:any) => {
 };
 
 // unseenMessages
-export const unseenMessages = async (parsedData: any, socket:any) => {
+export const unseenMessages = async (parsedData: any, socket: any) => {
   try {
     // validation
-    if(!parsedData?.payload) {
+    if (!parsedData?.payload) {
       throw new Error("Invalid payload structure");
     }
     console.log("parsedData", parsedData);
@@ -83,17 +81,17 @@ export const unseenMessages = async (parsedData: any, socket:any) => {
 
     // find allmessage of user and update isSeen to true of receiver
     const messages = await Message.find({ receiver: userId, isSeen: false });
-    
+
     // send message length to client
     socket.send(
       JSON.stringify({
         type: "numOfUnseenMessages",
         payload: {
           totalMessages: messages.length,
-        }
+        },
       })
     );
-    
+
     return;
   } catch (error) {
     console.log(error);
@@ -102,10 +100,10 @@ export const unseenMessages = async (parsedData: any, socket:any) => {
 };
 
 // markAsRead
-export const markAsRead = async (parsedData: any, socket:any) => {
+export const markAsRead = async (parsedData: any, socket: any) => {
   try {
     // validation
-    if(!parsedData?.payload) {
+    if (!parsedData?.payload) {
       throw new Error("Invalid payload structure");
     }
 
@@ -142,7 +140,7 @@ export const markAsRead = async (parsedData: any, socket:any) => {
 };
 
 // request order
-export const requestOrder = async (parsedData: any, socket:any) => {
+export const requestOrder = async (parsedData: any, socket: any) => {
   let senderWs: any;
   try {
     // validation
@@ -163,7 +161,20 @@ export const requestOrder = async (parsedData: any, socket:any) => {
     }
 
     // fetch data
-    const { location, date, time, additionalInfo, cabFare, totalPrice, eventId, sender, receiver, subId, unit } = parsedData.payload.formData;
+    const {
+      location,
+      date,
+      time,
+      additionalInfo,
+      cabFare,
+      totalPrice,
+      eventId,
+      sender,
+      receiver,
+      subId,
+      unit,
+    } = parsedData.payload.formData;
+    console.log("first", parsedData.payload.formData);
 
     // validation on event, user
     const [fromUser, toUser, isEvent] = await Promise.all([
@@ -178,10 +189,12 @@ export const requestOrder = async (parsedData: any, socket:any) => {
     // amount vaildation
 
     // checkIsChatExists -> if not create chat
-    let chat = await Chat.findOne({ participants: { $all: [sender, receiver] } });
+    let chat = await Chat.findOne({
+      participants: { $all: [sender, receiver] },
+    });
     if (!chat) {
       chat = await Chat.create({
-        participants: [sender, receiver]
+        participants: [sender, receiver],
       });
     }
 
@@ -209,7 +222,7 @@ export const requestOrder = async (parsedData: any, socket:any) => {
       text: parsedData.payload.formData,
       type: "order",
       order: order._id,
-    })
+    });
     await message.save();
 
     // update chat with the new message
@@ -220,22 +233,22 @@ export const requestOrder = async (parsedData: any, socket:any) => {
     );
 
     // update chatRoom
-    if (!chatRoom.get(chat?._id.toString())) {
-      chatRoom.set(chat?._id.toString(), new Map());
-      const participants = chatRoom.get(chat?._id.toString());
-      participants?.set(sender, socket);
-      participants?.set(receiver, socket);
-      console.log("inside chatRoom");
+    let participants = chatRoom.get(chat?._id.toString());
+    if (!participants) {
+      participants = new Map();
+      participants.set(sender, socket);
+      chatRoom.set(chat?._id.toString(), participants);
+    } else {
+      if (!participants.has(sender)) {
+        participants.set(sender, socket);
+      }
     }
-
-    console.log("chatRoom", chatRoom);
-    // participants
-    const participants = chatRoom.get(chat?._id.toString());
-    // participants?.set(sender, socket);
-    // participants?.set(receiver, socket);
 
     senderWs = participants?.get(sender);
     const receiverWs = participants?.get(receiver);
+    console.log("senderWs", senderWs);
+    console.log("receiverWs", receiverWs);
+    console.log("message", message);
 
     // send message to sender
     if (senderWs?.readyState === WebSocket.OPEN) {
@@ -262,9 +275,9 @@ export const requestOrder = async (parsedData: any, socket:any) => {
           success: true,
           message: "User chats fetched successfully",
           data: chat,
-        }
+        },
       })
-    )
+    );
 
     // send response to client
     senderWs?.send(
@@ -273,13 +286,12 @@ export const requestOrder = async (parsedData: any, socket:any) => {
         payload: {
           success: true,
           message: "Order request sent successfully",
-          data: message
-        }
+          data: message,
+        },
       })
-    )
+    );
 
     return;
-
   } catch (error) {
     console.log(error);
     // send response to client
@@ -289,9 +301,9 @@ export const requestOrder = async (parsedData: any, socket:any) => {
         payload: {
           success: false,
           message: "Order request failed",
-        }
+        },
       })
-    )
+    );
     return;
   }
 };
@@ -385,6 +397,8 @@ export const sendMessage = async (parsedData: any): Promise<any> => {
 
     const senderSocket = participants?.get(sender);
     const receiverSocket = participants?.get(receiver);
+    console.log("senderSocket", senderSocket);
+    console.log("receiverSocket", receiverSocket);
 
     // Create and save message
     const message = new Message({ sender, receiver, chatId, text });
@@ -448,8 +462,10 @@ export const fetchAllMessages = async (
     }
 
     // fetch messages
-    const data = await Message.find({ chatId: chatId }).populate("order").lean();
-    
+    const data = await Message.find({ chatId: chatId })
+      .populate("order")
+      .lean();
+
     // return res
     return SuccessResponse(res, 200, "Messages fetched successfully", data);
   } catch (error) {
@@ -555,10 +571,10 @@ export const fetchOtherUser = async (
 };
 
 // acceptOrder
-export const acceptOrder = async (parsedData: any, socket:any) => {
+export const acceptOrder = async (parsedData: any, socket: any) => {
   try {
     // validation
-    if(!parsedData?.payload?.msgId) {
+    if (!parsedData?.payload?.msgId) {
       throw new Error("Invalid payload structure");
     }
 
@@ -608,8 +624,7 @@ export const acceptOrder = async (parsedData: any, socket:any) => {
       { new: true }
     );
 
-
-    if(!chatRoom.get(message?.chatId?.toString())){
+    if (!chatRoom.get(message?.chatId?.toString())) {
       chatRoom.set(message?.chatId?.toString(), new Map());
     }
 
@@ -628,9 +643,9 @@ export const acceptOrder = async (parsedData: any, socket:any) => {
         payload: {
           success: true,
           message: "Your Order accepted, please do payment",
-        }
+        },
       })
-    )
+    );
 
     // send response to receiver
     receiverWs?.send(
@@ -639,10 +654,9 @@ export const acceptOrder = async (parsedData: any, socket:any) => {
         payload: {
           success: true,
           message: "Order accepted successfully",
-        }
+        },
       })
-    )
-
+    );
   } catch (error) {
     console.log(error);
     // send response to client
@@ -660,7 +674,10 @@ export const acceptOrder = async (parsedData: any, socket:any) => {
 };
 
 // fetch order of particular chat
-export const fetchOrdersOfChat = async (req: Request, res: Response): Promise<any> => {
+export const fetchOrdersOfChat = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     // fetch data
     const { chatId } = req.body;
@@ -693,8 +710,7 @@ export const fetchOrdersOfChat = async (req: Request, res: Response): Promise<an
 exports.sendOtp = async (req: Request, res: Response): Promise<any> => {
   try {
     // fetch data
-  }
-  catch (error) {
+  } catch (error) {
     console.log(error);
     return ErrorResponse(res, 500, "Internal server error");
   }
@@ -704,8 +720,7 @@ exports.sendOtp = async (req: Request, res: Response): Promise<any> => {
 exports.verifyOtp = async (req: Request, res: Response): Promise<any> => {
   try {
     // fetch data
-  }
-  catch (error) {
+  } catch (error) {
     console.log(error);
     return ErrorResponse(res, 500, "Internal server error");
   }
