@@ -279,6 +279,18 @@ export const requestOrder = async (parsedData: any, socket: any) => {
       })
     );
 
+    // reload chat
+    receiverWs?.send(
+      JSON.stringify({
+        type: "reloadChat",
+        payload: {
+          success: true,
+          message: "Chat reloaded successfully",
+          chatId: chat?._id,
+        },
+      })
+    );
+
     // send response to client
     senderWs?.send(
       JSON.stringify({
