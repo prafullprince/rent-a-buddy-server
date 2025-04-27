@@ -222,8 +222,13 @@ export const requestOrder = async (parsedData: any, socket:any) => {
     // update chatRoom
     if (!chatRoom.get(chat?._id.toString())) {
       chatRoom.set(chat?._id.toString(), new Map());
+      const participants = chatRoom.get(chat?._id.toString());
+      participants?.set(sender, socket);
+      participants?.set(receiver, socket);
+      console.log("inside chatRoom");
     }
 
+    console.log("chatRoom", chatRoom);
     // participants
     const participants = chatRoom.get(chat?._id.toString());
     // participants?.set(sender, socket);
@@ -402,9 +407,6 @@ export const sendMessage = async (parsedData: any): Promise<any> => {
     } else {
       console.log(`Receiver socket for ${receiver} is not open`);
     }
-    console.log("senderSocket readyState", senderSocket?.readyState);
-    console.log("receiverSocket readyState", receiverSocket?.readyState);
-    console.log("websocket is open", WebSocket.OPEN);
 
     // Update chat with the new message
     const updatedChat = await Chat.findByIdAndUpdate(
