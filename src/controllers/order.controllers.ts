@@ -233,11 +233,14 @@ export const requestOrder = async (parsedData: any, socket: any) => {
     );
 
     // update chatRoom
+    if(!chatRoom?.get(chat?._id?.toString())){
+      chatRoom?.set(chat?._id?.toString(), new Map());
+    }
+
     let participants = chatRoom.get(chat?._id.toString());
     if (!participants) {
       participants = new Map();
       participants.set(sender, socket);
-      chatRoom.set(chat?._id.toString(), participants);
     } else {
       if (!participants.has(sender)) {
         participants.set(sender, socket);
@@ -252,7 +255,7 @@ export const requestOrder = async (parsedData: any, socket: any) => {
 
     // send message to sender
     if (senderWs?.readyState === WebSocket.OPEN) {
-      senderWs.send(
+      senderWs?.send(
         JSON.stringify({ type: "receiveMessage", payload: message })
       );
     } else {
