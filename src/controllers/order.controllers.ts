@@ -226,8 +226,8 @@ export const requestOrder = async (parsedData: any, socket:any) => {
 
     // participants
     const participants = chatRoom.get(chat?._id.toString());
-    participants?.set(sender, socket);
-    participants?.set(receiver, socket);
+    // participants?.set(sender, socket);
+    // participants?.set(receiver, socket);
 
     senderWs = participants?.get(sender);
     const receiverWs = participants?.get(receiver);
