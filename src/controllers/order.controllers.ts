@@ -250,6 +250,17 @@ export const requestOrder = async (parsedData: any, socket:any) => {
       console.log(`Receiver socket for ${receiver} is not open`);
     }
 
+    receiverWs?.send(
+      JSON.stringify({
+        type: "fetchUserAllChats",
+        payload: {
+          success: true,
+          message: "User chats fetched successfully",
+          data: chat,
+        }
+      })
+    )
+
     // send response to client
     senderWs?.send(
       JSON.stringify({
