@@ -254,7 +254,7 @@ export const requestOrder = async (parsedData: any, socket: any) => {
     console.log("message", message);
 
     // send message to sender
-    if (senderWs?.readyState === WebSocket.OPEN) {
+    if (senderWs && senderWs?.readyState === WebSocket.OPEN) {
       senderWs?.send(
         JSON.stringify({ type: "receiveMessage", payload: message })
       );
@@ -263,7 +263,7 @@ export const requestOrder = async (parsedData: any, socket: any) => {
     }
 
     // send message to receiver
-    if (receiverWs?.readyState === WebSocket.OPEN) {
+    if (receiverWs && receiverWs?.readyState === WebSocket.OPEN) {
       receiverWs.send(
         JSON.stringify({ type: "receiveMessage", payload: message })
       );
@@ -271,7 +271,7 @@ export const requestOrder = async (parsedData: any, socket: any) => {
       console.log(`Receiver socket for ${receiver} is not open`);
     }
 
-    if(receiverWs?.readyState === WebSocket.OPEN){
+    if(receiverWs && receiverWs?.readyState === WebSocket.OPEN){
       receiverWs?.send(
         JSON.stringify({
           type: "fetchUserAllChats",
@@ -285,7 +285,7 @@ export const requestOrder = async (parsedData: any, socket: any) => {
     }
 
     // reload chat
-    if(receiverWs?.readyState === WebSocket.OPEN){
+    if(receiverWs && receiverWs?.readyState === WebSocket.OPEN){
       receiverWs?.send(
         JSON.stringify({
           type: "reloadChat",
@@ -299,7 +299,7 @@ export const requestOrder = async (parsedData: any, socket: any) => {
     }
 
     // send response to client
-    if(senderWs?.readyState === WebSocket.OPEN){
+    if(senderWs && senderWs?.readyState === WebSocket.OPEN){
       senderWs?.send(
         JSON.stringify({
           type: "orderStatus",
