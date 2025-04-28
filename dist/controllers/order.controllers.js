@@ -55,7 +55,7 @@ const fetchUserChats = (parsedData, socket) => __awaiter(void 0, void 0, void 0,
                 success: true,
                 message: "User chats fetched successfully",
                 data: chats,
-            }
+            },
         }));
         return;
     }
@@ -90,7 +90,7 @@ const unseenMessages = (parsedData, socket) => __awaiter(void 0, void 0, void 0,
             type: "numOfUnseenMessages",
             payload: {
                 totalMessages: messages.length,
-            }
+            },
         }));
         return;
     }
@@ -135,8 +135,7 @@ const markAsRead = (parsedData, socket) => __awaiter(void 0, void 0, void 0, fun
 exports.markAsRead = markAsRead;
 // request order
 const requestOrder = (parsedData, socket) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x;
-    let senderWs;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3;
     try {
         // validation
         if (!((_b = (_a = parsedData === null || parsedData === void 0 ? void 0 : parsedData.payload) === null || _a === void 0 ? void 0 : _a.formData) === null || _b === void 0 ? void 0 : _b.location) ||
@@ -153,7 +152,8 @@ const requestOrder = (parsedData, socket) => __awaiter(void 0, void 0, void 0, f
             throw new Error("Invalid payload structure");
         }
         // fetch data
-        const { location, date, time, additionalInfo, cabFare, totalPrice, eventId, sender, receiver, subId, unit } = parsedData.payload.formData;
+        const { location, date, time, additionalInfo, cabFare, totalPrice, eventId, sender, receiver, subId, unit, } = parsedData.payload.formData;
+        console.log("first", parsedData.payload.formData);
         // validation on event, user
         const [fromUser, toUser, isEvent] = yield Promise.all([
             user_models_1.default.findById(sender).lean(),
@@ -165,10 +165,12 @@ const requestOrder = (parsedData, socket) => __awaiter(void 0, void 0, void 0, f
         }
         // amount vaildation
         // checkIsChatExists -> if not create chat
-        let chat = yield chat_models_1.default.findOne({ participants: { $all: [sender, receiver] } });
+        let chat = yield chat_models_1.default.findOne({
+            participants: { $all: [sender, receiver] },
+        });
         if (!chat) {
             chat = yield chat_models_1.default.create({
-                participants: [sender, receiver]
+                participants: [sender, receiver],
             });
         }
         // create order
@@ -199,51 +201,83 @@ const requestOrder = (parsedData, socket) => __awaiter(void 0, void 0, void 0, f
         // update chat with the new message
         yield chat_models_1.default.findByIdAndUpdate(chat === null || chat === void 0 ? void 0 : chat._id, { $push: { message: message._id } }, { new: true });
         // update chatRoom
-        if (!index_1.chatRoom.get(chat === null || chat === void 0 ? void 0 : chat._id.toString())) {
-            index_1.chatRoom.set(chat === null || chat === void 0 ? void 0 : chat._id.toString(), new Map());
+        if (!(index_1.chatRoom === null || index_1.chatRoom === void 0 ? void 0 : index_1.chatRoom.has((_y = chat === null || chat === void 0 ? void 0 : chat._id) === null || _y === void 0 ? void 0 : _y.toString()))) {
+            index_1.chatRoom === null || index_1.chatRoom === void 0 ? void 0 : index_1.chatRoom.set((_z = chat === null || chat === void 0 ? void 0 : chat._id) === null || _z === void 0 ? void 0 : _z.toString(), new Map());
         }
-        // participants
-        const participants = index_1.chatRoom.get(chat === null || chat === void 0 ? void 0 : chat._id.toString());
-        participants === null || participants === void 0 ? void 0 : participants.set(sender, socket);
-        participants === null || participants === void 0 ? void 0 : participants.set(receiver, socket);
-        senderWs = participants === null || participants === void 0 ? void 0 : participants.get(sender);
-        const receiverWs = participants === null || participants === void 0 ? void 0 : participants.get(receiver);
+        let participants = index_1.chatRoom.get((_0 = chat === null || chat === void 0 ? void 0 : chat._id) === null || _0 === void 0 ? void 0 : _0.toString());
+        if (participants) {
+            const senderId = (_1 = message === null || message === void 0 ? void 0 : message.sender) === null || _1 === void 0 ? void 0 : _1.toString();
+            const existingSocket = participants.get(senderId);
+            if (!existingSocket || existingSocket.readyState !== WebSocket.OPEN) {
+                participants.set(senderId, socket);
+            }
+        }
+        const senderWs = participants === null || participants === void 0 ? void 0 : participants.get((_2 = message === null || message === void 0 ? void 0 : message.sender) === null || _2 === void 0 ? void 0 : _2.toString());
+        const receiverWs = participants === null || participants === void 0 ? void 0 : participants.get((_3 = message === null || message === void 0 ? void 0 : message.receiver) === null || _3 === void 0 ? void 0 : _3.toString());
+        console.log("senderWs", senderWs === null || senderWs === void 0 ? void 0 : senderWs.readyState);
+        console.log("open websocket", WebSocket.OPEN);
+        console.log("receiverWs", receiverWs === null || receiverWs === void 0 ? void 0 : receiverWs.readyState);
         // send message to sender
-        if ((senderWs === null || senderWs === void 0 ? void 0 : senderWs.readyState) === WebSocket.OPEN) {
-            senderWs.send(JSON.stringify({ type: "receiveMessage", payload: message }));
+        if (senderWs && (senderWs === null || senderWs === void 0 ? void 0 : senderWs.readyState) === WebSocket.OPEN) {
+            senderWs === null || senderWs === void 0 ? void 0 : senderWs.send(JSON.stringify({ type: "receiveMessage", payload: message }));
         }
         else {
             console.log(`Sender socket for ${sender} is not open`);
         }
         // send message to receiver
-        if ((receiverWs === null || receiverWs === void 0 ? void 0 : receiverWs.readyState) === WebSocket.OPEN) {
+        if (receiverWs && (receiverWs === null || receiverWs === void 0 ? void 0 : receiverWs.readyState) === WebSocket.OPEN) {
             receiverWs.send(JSON.stringify({ type: "receiveMessage", payload: message }));
         }
         else {
             console.log(`Receiver socket for ${receiver} is not open`);
         }
+        if (receiverWs && (receiverWs === null || receiverWs === void 0 ? void 0 : receiverWs.readyState) === WebSocket.OPEN) {
+            receiverWs === null || receiverWs === void 0 ? void 0 : receiverWs.send(JSON.stringify({
+                type: "fetchUserAllChats",
+                payload: {
+                    success: true,
+                    message: "User chats fetched successfully",
+                    data: chat,
+                },
+            }));
+        }
+        // reload chat
+        if (receiverWs && (receiverWs === null || receiverWs === void 0 ? void 0 : receiverWs.readyState) === WebSocket.OPEN) {
+            receiverWs === null || receiverWs === void 0 ? void 0 : receiverWs.send(JSON.stringify({
+                type: "reloadChat",
+                payload: {
+                    success: true,
+                    message: "Chat reloaded successfully",
+                    chatId: chat === null || chat === void 0 ? void 0 : chat._id,
+                },
+            }));
+        }
         // send response to client
-        senderWs === null || senderWs === void 0 ? void 0 : senderWs.send(JSON.stringify({
-            type: "orderStatus",
-            payload: {
-                success: true,
-                message: "Order request sent successfully",
-                data: message
-            }
-        }));
+        if (senderWs && (senderWs === null || senderWs === void 0 ? void 0 : senderWs.readyState) === WebSocket.OPEN) {
+            senderWs === null || senderWs === void 0 ? void 0 : senderWs.send(JSON.stringify({
+                type: "orderStatus",
+                payload: {
+                    success: true,
+                    message: "Order request sent successfully",
+                    data: message,
+                },
+            }));
+        }
         return;
     }
     catch (error) {
         console.log(error);
         // send response to client
-        senderWs === null || senderWs === void 0 ? void 0 : senderWs.send(JSON.stringify({
-            type: "orderStatus",
-            payload: {
-                success: false,
-                message: "Order request failed",
-            }
-        }));
-        return;
+        // senderWs?.send(
+        //   JSON.stringify({
+        //     type: "orderStatus",
+        //     payload: {
+        //       success: false,
+        //       message: "Order request failed",
+        //     },
+        //   })
+        // );
+        throw new Error("Order request failed");
     }
 });
 exports.requestOrder = requestOrder;
@@ -318,6 +352,8 @@ const sendMessage = (parsedData) => __awaiter(void 0, void 0, void 0, function* 
         }
         const senderSocket = participants === null || participants === void 0 ? void 0 : participants.get(sender);
         const receiverSocket = participants === null || participants === void 0 ? void 0 : participants.get(receiver);
+        console.log("senderSocket", senderSocket);
+        console.log("receiverSocket", receiverSocket);
         // Create and save message
         const message = new message_models_1.default({ sender, receiver, chatId, text });
         yield message.save();
@@ -335,9 +371,6 @@ const sendMessage = (parsedData) => __awaiter(void 0, void 0, void 0, function* 
         else {
             console.log(`Receiver socket for ${receiver} is not open`);
         }
-        console.log("senderSocket readyState", senderSocket === null || senderSocket === void 0 ? void 0 : senderSocket.readyState);
-        console.log("receiverSocket readyState", receiverSocket === null || receiverSocket === void 0 ? void 0 : receiverSocket.readyState);
-        console.log("websocket is open", WebSocket.OPEN);
         // Update chat with the new message
         const updatedChat = yield chat_models_1.default.findByIdAndUpdate(chatId, { $push: { message: message._id } }, { new: true });
         if (!updatedChat) {
@@ -368,7 +401,9 @@ const fetchAllMessages = (req, res) => __awaiter(void 0, void 0, void 0, functio
             return (0, apiResponse_helper_1.ErrorResponse)(res, 404, "Chat not found");
         }
         // fetch messages
-        const data = yield message_models_1.default.find({ chatId: chatId }).populate("order").lean();
+        const data = yield message_models_1.default.find({ chatId: chatId })
+            .populate("order")
+            .lean();
         // return res
         return (0, apiResponse_helper_1.SuccessResponse)(res, 200, "Messages fetched successfully", data);
     }
@@ -511,7 +546,7 @@ const acceptOrder = (parsedData, socket) => __awaiter(void 0, void 0, void 0, fu
             payload: {
                 success: true,
                 message: "Your Order accepted, please do payment",
-            }
+            },
         }));
         // send response to receiver
         receiverWs === null || receiverWs === void 0 ? void 0 : receiverWs.send(JSON.stringify({
@@ -519,7 +554,7 @@ const acceptOrder = (parsedData, socket) => __awaiter(void 0, void 0, void 0, fu
             payload: {
                 success: true,
                 message: "Order accepted successfully",
-            }
+            },
         }));
     }
     catch (error) {

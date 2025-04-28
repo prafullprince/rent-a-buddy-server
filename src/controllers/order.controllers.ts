@@ -141,7 +141,6 @@ export const markAsRead = async (parsedData: any, socket: any) => {
 
 // request order
 export const requestOrder = async (parsedData: any, socket: any) => {
-  let senderWs: any;
   try {
     // validation
     if (
@@ -233,25 +232,27 @@ export const requestOrder = async (parsedData: any, socket: any) => {
     );
 
     // update chatRoom
-    if(!chatRoom?.get(chat?._id?.toString())){
+    if (!chatRoom?.has(chat?._id?.toString())) {
       chatRoom?.set(chat?._id?.toString(), new Map());
     }
-
-    let participants = chatRoom.get(chat?._id.toString());
-    if (!participants) {
-      participants = new Map();
-      participants.set(sender, socket);
-    } else {
-      if (!participants.has(sender)) {
-        participants.set(sender, socket);
+    
+    let participants = chatRoom.get(chat?._id?.toString());
+    
+    if (participants) {
+      const senderId = message?.sender?.toString();
+      const existingSocket = participants.get(senderId);
+    
+      if (!existingSocket || existingSocket.readyState !== WebSocket.OPEN) {
+        participants.set(senderId, socket);
       }
     }
-
-    senderWs = participants?.get(sender);
-    const receiverWs = participants?.get(receiver);
+    
+    const senderWs = participants?.get(message?.sender?.toString());
+    const receiverWs = participants?.get(message?.receiver?.toString());
+    
     console.log("senderWs", senderWs?.readyState);
+    console.log("open websocket", WebSocket.OPEN);
     console.log("receiverWs", receiverWs?.readyState);
-    console.log("message", message);
 
     // send message to sender
     if (senderWs && senderWs?.readyState === WebSocket.OPEN) {
