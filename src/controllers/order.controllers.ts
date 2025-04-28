@@ -249,8 +249,8 @@ export const requestOrder = async (parsedData: any, socket: any) => {
 
     senderWs = participants?.get(sender);
     const receiverWs = participants?.get(receiver);
-    console.log("senderWs", senderWs);
-    console.log("receiverWs", receiverWs);
+    console.log("senderWs", senderWs?.readyState);
+    console.log("receiverWs", receiverWs?.readyState);
     console.log("message", message);
 
     // send message to sender
@@ -271,55 +271,61 @@ export const requestOrder = async (parsedData: any, socket: any) => {
       console.log(`Receiver socket for ${receiver} is not open`);
     }
 
-    receiverWs?.send(
-      JSON.stringify({
-        type: "fetchUserAllChats",
-        payload: {
-          success: true,
-          message: "User chats fetched successfully",
-          data: chat,
-        },
-      })
-    );
+    if(receiverWs?.readyState === WebSocket.OPEN){
+      receiverWs?.send(
+        JSON.stringify({
+          type: "fetchUserAllChats",
+          payload: {
+            success: true,
+            message: "User chats fetched successfully",
+            data: chat,
+          },
+        })
+      );
+    }
 
     // reload chat
-    receiverWs?.send(
-      JSON.stringify({
-        type: "reloadChat",
-        payload: {
-          success: true,
-          message: "Chat reloaded successfully",
-          chatId: chat?._id,
-        },
-      })
-    );
+    if(receiverWs?.readyState === WebSocket.OPEN){
+      receiverWs?.send(
+        JSON.stringify({
+          type: "reloadChat",
+          payload: {
+            success: true,
+            message: "Chat reloaded successfully",
+            chatId: chat?._id,
+          },
+        })
+      );
+    }
 
     // send response to client
-    senderWs?.send(
-      JSON.stringify({
-        type: "orderStatus",
-        payload: {
-          success: true,
-          message: "Order request sent successfully",
-          data: message,
-        },
-      })
-    );
+    if(senderWs?.readyState === WebSocket.OPEN){
+      senderWs?.send(
+        JSON.stringify({
+          type: "orderStatus",
+          payload: {
+            success: true,
+            message: "Order request sent successfully",
+            data: message,
+          },
+        })
+      );
+    }
 
     return;
   } catch (error) {
     console.log(error);
     // send response to client
-    senderWs?.send(
-      JSON.stringify({
-        type: "orderStatus",
-        payload: {
-          success: false,
-          message: "Order request failed",
-        },
-      })
-    );
-    return;
+    // senderWs?.send(
+    //   JSON.stringify({
+    //     type: "orderStatus",
+    //     payload: {
+    //       success: false,
+    //       message: "Order request failed",
+    //     },
+    //   })
+    // );
+    throw new Error("Order request failed");
   }
 };
 
