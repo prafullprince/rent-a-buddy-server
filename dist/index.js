@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.chatRoom = void 0;
+exports.userMap = exports.chatRoom = void 0;
 const express_1 = __importDefault(require("express"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const cors_1 = __importDefault(require("cors"));
@@ -30,6 +30,7 @@ const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);
 const wss = new ws_1.WebSocketServer({ server });
 exports.chatRoom = new Map();
+exports.userMap = new Map();
 // wesocket logic
 wss.on("connection", (socket) => {
     console.log("connected");
@@ -44,6 +45,21 @@ wss.on("connection", (socket) => {
         // register user
         if (parsedData.type === "register") {
             (0, order_controllers_1.registerUserInChatRoom)(parsedData, socket);
+        }
+        // openChat
+        if (parsedData.type === "openChat") {
+            console.log("openChat");
+            exports.userMap === null || exports.userMap === void 0 ? void 0 : exports.userMap.set(parsedData.payload.userId, parsedData.payload.chatId);
+        }
+        // closeChat
+        if (parsedData.type === "closeChat") {
+            console.log("closeChat");
+            exports.userMap === null || exports.userMap === void 0 ? void 0 : exports.userMap.delete(parsedData.payload.userId);
+        }
+        // ping
+        if (parsedData.type === "ping") {
+            socket.send(JSON.stringify({ type: "pong" }));
+            return;
         }
         // sendMessage
         if (parsedData.type === "sendMessage") {
@@ -68,6 +84,11 @@ wss.on("connection", (socket) => {
         if (parsedData.type === "unseenMessages") {
             console.log("unseenMessages");
             (0, order_controllers_1.unseenMessages)(parsedData, socket);
+        }
+        // unseenMessages of particular chatId
+        if (parsedData.type === "unseenMessageOfParticularChatIdOfUser") {
+            console.log("unseenMessageOfParticularChatIdOfUser");
+            (0, order_controllers_1.unseenMessageOfParticularChatIdOfUser)(parsedData, socket);
         }
         // fetchAllChat
         if (parsedData.type === "fetchAllChat") {

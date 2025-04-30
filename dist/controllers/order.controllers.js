@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.fetchOrdersOfChat = exports.acceptOrder = exports.fetchOtherUser = exports.fetchOrderHistory = exports.fetchChat = exports.fetchAllMessages = exports.sendMessage = exports.registerUserInChatRoom = exports.removeUserFromChatRoom = exports.requestOrder = exports.markAsRead = exports.unseenMessages = exports.fetchUserChats = void 0;
+exports.fetchOrdersOfChat = exports.acceptOrder = exports.fetchOtherUser = exports.fetchOrderHistory = exports.fetchChat = exports.fetchAllMessages = exports.sendMessage = exports.registerUserInChatRoom = exports.removeUserFromChatRoom = exports.requestOrder = exports.unseenMessageOfParticularChatIdOfUser = exports.markAsRead = exports.unseenMessages = exports.fetchUserChats = void 0;
 const apiResponse_helper_1 = require("../helper/apiResponse.helper");
 const user_models_1 = __importDefault(require("../models/user.models"));
 const event_models_1 = __importDefault(require("../models/event.models"));
@@ -86,12 +86,14 @@ const unseenMessages = (parsedData, socket) => __awaiter(void 0, void 0, void 0,
         // find allmessage of user and update isSeen to true of receiver
         const messages = yield message_models_1.default.find({ receiver: userId, isSeen: false });
         // send message length to client
-        socket.send(JSON.stringify({
-            type: "numOfUnseenMessages",
-            payload: {
-                totalMessages: messages.length,
-            },
-        }));
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: "numOfUnseenMessages",
+                payload: {
+                    totalMessages: messages === null || messages === void 0 ? void 0 : messages.length,
+                },
+            }));
+        }
         return;
     }
     catch (error) {
@@ -133,6 +135,42 @@ const markAsRead = (parsedData, socket) => __awaiter(void 0, void 0, void 0, fun
     }
 });
 exports.markAsRead = markAsRead;
+// unseenMessageOfParticularChatIdOfUser
+const unseenMessageOfParticularChatIdOfUser = (parsedData, socket) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // validation
+        if (!(parsedData === null || parsedData === void 0 ? void 0 : parsedData.payload)) {
+            throw new Error("Invalid payload structure");
+        }
+        // fetch data
+        const { userId, chatIds } = parsedData.payload;
+        // validation
+        if (!userId || !chatIds || chatIds.length === 0) {
+            throw new Error("Invalid payload structure");
+        }
+        // find allmessage of chat and update isSeen to true of receiver
+        const counts = yield Promise.all(chatIds.map((chatId) => __awaiter(void 0, void 0, void 0, function* () {
+            const count = yield message_models_1.default.countDocuments({
+                chatId: chatId,
+                receiver: userId,
+                isSeen: false,
+            });
+            return { chatId, unSeenCount: count };
+        })));
+        if (counts.length > 0) {
+            socket === null || socket === void 0 ? void 0 : socket.send(JSON.stringify({
+                type: "numOfUnseenMessages",
+                payload: counts
+            }));
+        }
+        return;
+    }
+    catch (error) {
+        console.log(error);
+        return;
+    }
+});
+exports.unseenMessageOfParticularChatIdOfUser = unseenMessageOfParticularChatIdOfUser;
 // request order
 const requestOrder = (parsedData, socket) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3;
@@ -217,13 +255,14 @@ const requestOrder = (parsedData, socket) => __awaiter(void 0, void 0, void 0, f
         console.log("senderWs", senderWs === null || senderWs === void 0 ? void 0 : senderWs.readyState);
         console.log("open websocket", WebSocket.OPEN);
         console.log("receiverWs", receiverWs === null || receiverWs === void 0 ? void 0 : receiverWs.readyState);
-        // send message to sender
-        if (senderWs && (senderWs === null || senderWs === void 0 ? void 0 : senderWs.readyState) === WebSocket.OPEN) {
-            senderWs === null || senderWs === void 0 ? void 0 : senderWs.send(JSON.stringify({ type: "receiveMessage", payload: message }));
-        }
-        else {
-            console.log(`Sender socket for ${sender} is not open`);
-        }
+        // // send message to sender
+        // if (senderWs && senderWs?.readyState === WebSocket.OPEN) {
+        //   senderWs?.send(
+        //     JSON.stringify({ type: "receiveMessage", payload: message })
+        //   );
+        // } else {
+        //   console.log(`Sender socket for ${sender} is not open`);
+        // }
         // send message to receiver
         if (receiverWs && (receiverWs === null || receiverWs === void 0 ? void 0 : receiverWs.readyState) === WebSocket.OPEN) {
             receiverWs.send(JSON.stringify({ type: "receiveMessage", payload: message }));
@@ -231,16 +270,18 @@ const requestOrder = (parsedData, socket) => __awaiter(void 0, void 0, void 0, f
         else {
             console.log(`Receiver socket for ${receiver} is not open`);
         }
-        if (receiverWs && (receiverWs === null || receiverWs === void 0 ? void 0 : receiverWs.readyState) === WebSocket.OPEN) {
-            receiverWs === null || receiverWs === void 0 ? void 0 : receiverWs.send(JSON.stringify({
-                type: "fetchUserAllChats",
-                payload: {
-                    success: true,
-                    message: "User chats fetched successfully",
-                    data: chat,
-                },
-            }));
-        }
+        // if(receiverWs && receiverWs?.readyState === WebSocket.OPEN){
+        //   receiverWs?.send(
+        //     JSON.stringify({
+        //       type: "fetchUserAllChats",
+        //       payload: {
+        //         success: true,
+        //         message: "User chats fetched successfully",
+        //         data: chat,
+        //       },
+        //     })
+        //   );
+        // }
         // reload chat
         if (receiverWs && (receiverWs === null || receiverWs === void 0 ? void 0 : receiverWs.readyState) === WebSocket.OPEN) {
             receiverWs === null || receiverWs === void 0 ? void 0 : receiverWs.send(JSON.stringify({
@@ -266,7 +307,7 @@ const requestOrder = (parsedData, socket) => __awaiter(void 0, void 0, void 0, f
         return;
     }
     catch (error) {
-        console.log(error);
+        console.log("error", error);
         // send response to client
         // senderWs?.send(
         //   JSON.stringify({
@@ -303,31 +344,27 @@ exports.removeUserFromChatRoom = removeUserFromChatRoom;
 // registerUserInChatRoom
 const registerUserInChatRoom = (parsedData, socket) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        // validation
-        if (!(parsedData === null || parsedData === void 0 ? void 0 : parsedData.payload)) {
-            throw new Error("Invalid payload structure");
-        }
-        // fetch data
-        const { chatId, userId } = parsedData.payload;
-        // validation
+        const { payload } = parsedData;
+        const { chatId, userId } = payload || {};
+        // Simple and clear validation
         if (!chatId || !userId) {
-            throw new Error("Invalid payload structure");
+            throw new Error("chatId and userId are required");
         }
-        // chatRoom
-        if (!index_1.chatRoom.get(chatId)) {
+        // Initialize chat room if it doesn't exist
+        if (!index_1.chatRoom.has(chatId)) {
             index_1.chatRoom.set(chatId, new Map());
         }
-        // participants
+        // Add or update participant socket
         const participants = index_1.chatRoom.get(chatId);
-        participants === null || participants === void 0 ? void 0 : participants.set(userId, socket);
+        participants.set(userId, socket); // Always update to ensure the latest socket
         // Handle disconnection
         socket.on("disconnect", () => {
             (0, exports.removeUserFromChatRoom)(chatId, userId);
         });
+        console.log(`User ${userId} registered in chat room ${chatId}`);
     }
     catch (error) {
-        console.log(error);
-        return;
+        console.error("Error in registerUserInChatRoom:", error);
     }
 });
 exports.registerUserInChatRoom = registerUserInChatRoom;
@@ -352,10 +389,12 @@ const sendMessage = (parsedData) => __awaiter(void 0, void 0, void 0, function* 
         }
         const senderSocket = participants === null || participants === void 0 ? void 0 : participants.get(sender);
         const receiverSocket = participants === null || participants === void 0 ? void 0 : participants.get(receiver);
-        console.log("senderSocket", senderSocket);
-        console.log("receiverSocket", receiverSocket);
+        const isReceiverOnline = (receiverSocket === null || receiverSocket === void 0 ? void 0 : receiverSocket.readyState) === WebSocket.OPEN;
+        const isChatOpen = (index_1.userMap === null || index_1.userMap === void 0 ? void 0 : index_1.userMap.get(receiver)) === chatId;
+        console.log("isReceiverOnline", isReceiverOnline);
+        console.log("isChatOpen", isChatOpen);
         // Create and save message
-        const message = new message_models_1.default({ sender, receiver, chatId, text });
+        const message = new message_models_1.default({ sender, receiver, chatId, text, isSeen: isReceiverOnline && isChatOpen });
         yield message.save();
         // Send message to sender
         if ((senderSocket === null || senderSocket === void 0 ? void 0 : senderSocket.readyState) === WebSocket.OPEN) {
@@ -365,7 +404,7 @@ const sendMessage = (parsedData) => __awaiter(void 0, void 0, void 0, function* 
             console.log(`Sender socket for ${sender} is not open`);
         }
         // Send message to receiver
-        if ((receiverSocket === null || receiverSocket === void 0 ? void 0 : receiverSocket.readyState) === WebSocket.OPEN) {
+        if (isReceiverOnline) {
             receiverSocket.send(JSON.stringify({ type: "receiveMessage", payload: message }));
         }
         else {

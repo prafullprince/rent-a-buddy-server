@@ -19,7 +19,7 @@ import paymentRoutes from "./routes/payment.routes";
 import connectDB from "./config/mongodb";
 import { cloudinaryConnect } from "./config/cloudinary";
 import { WebSocketServer } from "ws";
-import { acceptOrder, fetchUserChats, markAsRead, registerUserInChatRoom, requestOrder, sendMessage, unseenMessages } from "./controllers/order.controllers";
+import { acceptOrder, fetchUserChats, markAsRead, registerUserInChatRoom, requestOrder, sendMessage, unseenMessageOfParticularChatIdOfUser, unseenMessages } from "./controllers/order.controllers";
 
 dotenv.config(); // Load environment variables
 
@@ -29,6 +29,7 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 export const chatRoom = new Map<string, Map<string, WebSocket>>();
+export const userMap = new Map<string, string>();
 
 // wesocket logic
 wss.on("connection", (socket:any)=>{
@@ -47,6 +48,24 @@ wss.on("connection", (socket:any)=>{
     // register user
     if( parsedData.type === "register" ) {
       registerUserInChatRoom( parsedData, socket );
+    }
+
+    // openChat
+    if( parsedData.type === "openChat" ) {
+      console.log("openChat");
+      userMap?.set(parsedData.payload.userId, parsedData.payload.chatId);
+    }
+
+    // closeChat
+    if( parsedData.type === "closeChat" ) {
+      console.log("closeChat");
+      userMap?.delete(parsedData.payload.userId);
+    }
+
+    // ping
+    if (parsedData.type === "ping") {
+      socket.send(JSON.stringify({ type: "pong" }));
+      return;
     }
 
     // sendMessage
@@ -76,6 +95,12 @@ wss.on("connection", (socket:any)=>{
     if( parsedData.type === "unseenMessages" ) {
       console.log("unseenMessages");
       unseenMessages( parsedData, socket );
+    }
+
+    // unseenMessages of particular chatId
+    if( parsedData.type === "unseenMessageOfParticularChatIdOfUser" ) {
+      console.log("unseenMessageOfParticularChatIdOfUser");
+      unseenMessageOfParticularChatIdOfUser( parsedData, socket );
     }
 
     // fetchAllChat

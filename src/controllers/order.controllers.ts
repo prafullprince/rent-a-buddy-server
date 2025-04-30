@@ -4,7 +4,7 @@ import User from "../models/user.models";
 import Event from "../models/event.models";
 import Chat from "../models/chat.models";
 import Order from "../models/order.models";
-import { chatRoom } from "../index";
+import { chatRoom, userMap } from "../index";
 import Message from "../models/message.models";
 
 // fetchUserChats
@@ -83,14 +83,16 @@ export const unseenMessages = async (parsedData: any, socket: any) => {
     const messages = await Message.find({ receiver: userId, isSeen: false });
 
     // send message length to client
-    socket.send(
-      JSON.stringify({
-        type: "numOfUnseenMessages",
-        payload: {
-          totalMessages: messages.length,
-        },
-      })
-    );
+    if(socket.readyState === WebSocket.OPEN){
+      socket.send(
+        JSON.stringify({
+          type: "numOfUnseenMessages",
+          payload: {
+            totalMessages: messages?.length,
+          },
+        })
+      );
+    }
 
     return;
   } catch (error) {
@@ -132,6 +134,53 @@ export const markAsRead = async (parsedData: any, socket: any) => {
         { $set: { isSeen: true } }
       );
     }
+
+    return;
+  } catch (error) {
+    console.log(error);
+    return;
+  }
+};
+
+// unseenMessageOfParticularChatIdOfUser
+export const unseenMessageOfParticularChatIdOfUser = async ( parsedData: any, socket: any ) => {
+  try {
+    // validation
+    if (!parsedData?.payload) {
+      throw new Error("Invalid payload structure");
+    }
+
+    // fetch data
+    const { userId, chatIds } = parsedData.payload;
+
+    // validation
+    if (!userId || !chatIds || chatIds.length === 0) {
+      throw new Error("Invalid payload structure");
+    }
+
+    // find allmessage of chat and update isSeen to true of receiver
+    const counts = await Promise.all(
+      chatIds.map(
+        async (chatId:any) => {
+          const count = await Message.countDocuments({
+            chatId: chatId,
+            receiver: userId,
+            isSeen: false,
+          });
+          return { chatId, unSeenCount:count };
+        }
+      )
+    )
+
+    if (counts.length > 0) {
+      socket?.send(
+        JSON.stringify({
+          type: "numOfUnseenMessages",
+          payload: counts
+        })
+      )
+    }
+
     return;
   } catch (error) {
     console.log(error);
@@ -254,14 +303,14 @@ export const requestOrder = async (parsedData: any, socket: any) => {
     console.log("open websocket", WebSocket.OPEN);
     console.log("receiverWs", receiverWs?.readyState);
 
-    // send message to sender
-    if (senderWs && senderWs?.readyState === WebSocket.OPEN) {
-      senderWs?.send(
-        JSON.stringify({ type: "receiveMessage", payload: message })
-      );
-    } else {
-      console.log(`Sender socket for ${sender} is not open`);
-    }
+    // // send message to sender
+    // if (senderWs && senderWs?.readyState === WebSocket.OPEN) {
+    //   senderWs?.send(
+    //     JSON.stringify({ type: "receiveMessage", payload: message })
+    //   );
+    // } else {
+    //   console.log(`Sender socket for ${sender} is not open`);
+    // }
 
     // send message to receiver
     if (receiverWs && receiverWs?.readyState === WebSocket.OPEN) {
@@ -272,18 +321,18 @@ export const requestOrder = async (parsedData: any, socket: any) => {
       console.log(`Receiver socket for ${receiver} is not open`);
     }
 
-    if(receiverWs && receiverWs?.readyState === WebSocket.OPEN){
-      receiverWs?.send(
-        JSON.stringify({
-          type: "fetchUserAllChats",
-          payload: {
-            success: true,
-            message: "User chats fetched successfully",
-            data: chat,
-          },
-        })
-      );
-    }
+    // if(receiverWs && receiverWs?.readyState === WebSocket.OPEN){
+    //   receiverWs?.send(
+    //     JSON.stringify({
+    //       type: "fetchUserAllChats",
+    //       payload: {
+    //         success: true,
+    //         message: "User chats fetched successfully",
+    //         data: chat,
+    //       },
+    //     })
+    //   );
+    // }
 
     // reload chat
     if(receiverWs && receiverWs?.readyState === WebSocket.OPEN){
@@ -315,7 +364,7 @@ export const requestOrder = async (parsedData: any, socket: any) => {
 
     return;
   } catch (error) {
-    console.log(error);
+    console.log("error", error);
     // send response to client
     // senderWs?.send(
     //   JSON.stringify({
@@ -359,39 +408,36 @@ export const registerUserInChatRoom = async (
     };
   },
   socket: any
-): Promise<any> => {
+): Promise<void> => {
   try {
-    // validation
-    if (!parsedData?.payload) {
-      throw new Error("Invalid payload structure");
-    }
+    const { payload } = parsedData;
+    const { chatId, userId } = payload || {};
 
-    // fetch data
-    const { chatId, userId } = parsedData.payload;
-
-    // validation
+    // Simple and clear validation
     if (!chatId || !userId) {
-      throw new Error("Invalid payload structure");
+      throw new Error("chatId and userId are required");
     }
 
-    // chatRoom
-    if (!chatRoom.get(chatId)) {
+    // Initialize chat room if it doesn't exist
+    if (!chatRoom.has(chatId)) {
       chatRoom.set(chatId, new Map());
     }
 
-    // participants
-    const participants = chatRoom.get(chatId);
-    participants?.set(userId, socket);
+    // Add or update participant socket
+    const participants = chatRoom.get(chatId)!;
+    participants.set(userId, socket); // Always update to ensure the latest socket
 
     // Handle disconnection
     socket.on("disconnect", () => {
       removeUserFromChatRoom(chatId, userId);
     });
+
+    console.log(`User ${userId} registered in chat room ${chatId}`);
   } catch (error) {
-    console.log(error);
-    return;
+    console.error("Error in registerUserInChatRoom:", error);
   }
 };
+
 
 // sendMessage
 export const sendMessage = async (parsedData: any): Promise<any> => {
@@ -419,11 +465,13 @@ export const sendMessage = async (parsedData: any): Promise<any> => {
 
     const senderSocket = participants?.get(sender);
     const receiverSocket = participants?.get(receiver);
-    console.log("senderSocket", senderSocket);
-    console.log("receiverSocket", receiverSocket);
 
+    const isReceiverOnline = receiverSocket?.readyState === WebSocket.OPEN;
+    const isChatOpen = userMap?.get(receiver) === chatId;
+    console.log("isReceiverOnline", isReceiverOnline);
+    console.log("isChatOpen", isChatOpen);
     // Create and save message
-    const message = new Message({ sender, receiver, chatId, text });
+    const message = new Message({ sender, receiver, chatId, text, isSeen: isReceiverOnline && isChatOpen });
     await message.save();
 
     // Send message to sender
@@ -436,7 +484,7 @@ export const sendMessage = async (parsedData: any): Promise<any> => {
     }
 
     // Send message to receiver
-    if (receiverSocket?.readyState === WebSocket.OPEN) {
+    if (isReceiverOnline) {
       receiverSocket.send(
         JSON.stringify({ type: "receiveMessage", payload: message })
       );
