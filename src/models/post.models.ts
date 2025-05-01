@@ -1,20 +1,20 @@
 // import
 import mongoose, { Schema } from "mongoose";
 
-
-
 // schema
-const postSchema:Schema = new Schema({
+const postSchema: Schema = new Schema(
+  {
     user: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
+      type: Schema.Types.ObjectId,
+      ref: "User",
     },
     imageUrl: {
-        type: String,
+      type: String,
     },
-},{timestamps: true});
-
+  },
+  { timestamps: true }
+);
 
 // export
-const Post = mongoose.model<any>("Post",postSchema);
+const Post = mongoose.model<any>("Post", postSchema);
 export default Post;

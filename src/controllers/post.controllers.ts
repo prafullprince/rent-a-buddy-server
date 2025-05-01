@@ -3,20 +3,27 @@ import Post from "../models/post.models";
 import { thumbnailToCloudinary } from "../helper/mediaUpload.helper";
 import User from "../models/user.models";
 import { ErrorResponse, SuccessResponse } from "../helper/apiResponse.helper";
+import mongoose from "mongoose";
 
 // create post
-export const createPost = async (req: Request, res: Response) => {
+export const createPost = async (req: Request, res: Response): Promise<any> => {
   try {
     // fetch data
     const userId = req.user?.id;
-    if (!userId) {
+    const userIds = new mongoose.Types.ObjectId(userId);
+    console.log(userIds);
+    if (!userIds) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
     // check user present
-    const isUser = await Post.findOne({ user: userId });
+    const isUser = await User.findById(userIds);
     if (!isUser) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    if (isUser.posts.length >= 10) {
+      return res.status(400).json({ message: "You can not create more than 10 posts" });
     }
 
     // find thumbnail
@@ -61,23 +68,24 @@ export const createPost = async (req: Request, res: Response) => {
 
 
 // get posts by user
-export const getPostsByUser = async (req: Request, res: Response) => {
+export const getPostsByUser = async (req: Request, res: Response): Promise<any> => {
   try {
-    const userId = req.user?.id;
-    if (!userId) {
+    const userId = req.body.userId;
+    const userIds = new mongoose.Types.ObjectId(userId);
+    if (!userIds) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
     // check user present
-    const isUser = await Post.findOne({ user: userId });
+    const isUser = await User.findById(userIds);
     if (!isUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // get posts -> infinte scrolling
-    const posts = await Post.find({ user: isUser._id });
+    // get posts -> max 10 posts
+    const data = await User.findById(userId).select("_id posts").populate("posts").limit(10);
 
-    return SuccessResponse(res,200,"Posts fetched successfully",posts);
+    return SuccessResponse(res,200,"Posts fetched successfully",data);
 
   } catch (error) {
     console.log(error);
@@ -87,7 +95,7 @@ export const getPostsByUser = async (req: Request, res: Response) => {
 
 
 // delete post by id
-export const deletePostById = async (req: Request, res: Response) => {
+export const deletePostById = async (req: Request, res: Response): Promise<any> => {
   try {
 
     // fetch data
@@ -104,7 +112,7 @@ export const deletePostById = async (req: Request, res: Response) => {
 
     // verify post exist by this user
     const [isPost,isUser] = await Promise.all([
-      Post.findOne({ user: userId}),
+      Post.findById(postId),
       User.findById(userId)
     ])
 
@@ -116,14 +124,14 @@ export const deletePostById = async (req: Request, res: Response) => {
     }
 
     // delete post
-    await Post.findByIdAndDelete(isPost._id);
+    const data = await Post.findByIdAndDelete(isPost._id);
 
     // update user
     await User.findByIdAndUpdate(
       { _id: isUser._id },
       {
         $pull: {
-          posts: postId,
+          posts: data?._id,
         },
       },
       { new: true }

@@ -17,19 +17,25 @@ const post_models_1 = __importDefault(require("../models/post.models"));
 const mediaUpload_helper_1 = require("../helper/mediaUpload.helper");
 const user_models_1 = __importDefault(require("../models/user.models"));
 const apiResponse_helper_1 = require("../helper/apiResponse.helper");
+const mongoose_1 = __importDefault(require("mongoose"));
 // create post
 const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     try {
         // fetch data
         const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-        if (!userId) {
+        const userIds = new mongoose_1.default.Types.ObjectId(userId);
+        console.log(userIds);
+        if (!userIds) {
             return res.status(401).json({ message: "Unauthorized" });
         }
         // check user present
-        const isUser = yield post_models_1.default.findOne({ user: userId });
+        const isUser = yield user_models_1.default.findById(userIds);
         if (!isUser) {
             return res.status(404).json({ message: "User not found" });
+        }
+        if (isUser.posts.length >= 10) {
+            return res.status(400).json({ message: "You can not create more than 10 posts" });
         }
         // find thumbnail
         const thumbnail = (_b = req.files) === null || _b === void 0 ? void 0 : _b.imageUrl;
@@ -62,20 +68,20 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 exports.createPost = createPost;
 // get posts by user
 const getPostsByUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
     try {
-        const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-        if (!userId) {
+        const userId = req.body.userId;
+        const userIds = new mongoose_1.default.Types.ObjectId(userId);
+        if (!userIds) {
             return res.status(401).json({ message: "Unauthorized" });
         }
         // check user present
-        const isUser = yield post_models_1.default.findOne({ user: userId });
+        const isUser = yield user_models_1.default.findById(userIds);
         if (!isUser) {
             return res.status(404).json({ message: "User not found" });
         }
-        // get posts -> infinte scrolling
-        const posts = yield post_models_1.default.find({ user: isUser._id });
-        return (0, apiResponse_helper_1.SuccessResponse)(res, 200, "Posts fetched successfully", posts);
+        // get posts -> max 10 posts
+        const data = yield user_models_1.default.findById(userId).select("_id posts").populate("posts").limit(10);
+        return (0, apiResponse_helper_1.SuccessResponse)(res, 200, "Posts fetched successfully", data);
     }
     catch (error) {
         console.log(error);
@@ -99,7 +105,7 @@ const deletePostById = (req, res) => __awaiter(void 0, void 0, void 0, function*
         }
         // verify post exist by this user
         const [isPost, isUser] = yield Promise.all([
-            post_models_1.default.findOne({ user: userId }),
+            post_models_1.default.findById(postId),
             user_models_1.default.findById(userId)
         ]);
         if (!isPost) {
@@ -109,11 +115,11 @@ const deletePostById = (req, res) => __awaiter(void 0, void 0, void 0, function*
             return res.status(404).json({ message: "User not found" });
         }
         // delete post
-        yield post_models_1.default.findByIdAndDelete(isPost._id);
+        const data = yield post_models_1.default.findByIdAndDelete(isPost._id);
         // update user
         yield user_models_1.default.findByIdAndUpdate({ _id: isUser._id }, {
             $pull: {
-                posts: postId,
+                posts: data === null || data === void 0 ? void 0 : data._id,
             },
         }, { new: true });
         return (0, apiResponse_helper_1.SuccessResponse)(res, 200, "Post deleted successfully", null);
