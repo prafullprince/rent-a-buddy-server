@@ -30,14 +30,11 @@ export const fetchUserChats = async (parsedData: any, socket: any) => {
 
     // fetch chats
     const chats = await Chat.find({ participants: userId })
+      .select("_id participants")
       .populate({
         path: "participants",
         select: "_id username image",
       })
-      .populate({
-        path: "message",
-        select: "_id text isSeen receiver",
-      });
     console.log("first", chats);
     // send message to client
     socket.send(
@@ -80,6 +77,7 @@ export const unseenMessages = async (parsedData: any, socket: any) => {
     }
 
     // find allmessage of user and update isSeen to true of receiver
+    // TODO: decrease payload
     const messages = await Message.find({ receiver: userId, isSeen: false });
 
     // send message length to client
@@ -458,6 +456,7 @@ export const sendMessage = async (parsedData: any): Promise<any> => {
 
     // Get chat participants
     const participants = chatRoom.get(chatId);
+    console.log("participants", participants);
     if (!participants) {
       console.log("No active participants found for chatId:", chatId);
       return;
@@ -465,11 +464,14 @@ export const sendMessage = async (parsedData: any): Promise<any> => {
 
     const senderSocket = participants?.get(sender);
     const receiverSocket = participants?.get(receiver);
+    console.log("senderSocket", senderSocket?.readyState);
+    console.log("receiverSocket", receiverSocket?.readyState);
 
     const isReceiverOnline = receiverSocket?.readyState === WebSocket.OPEN;
     const isChatOpen = userMap?.get(receiver) === chatId;
     console.log("isReceiverOnline", isReceiverOnline);
     console.log("isChatOpen", isChatOpen);
+
     // Create and save message
     const message = new Message({ sender, receiver, chatId, text, isSeen: isReceiverOnline && isChatOpen });
     await message.save();
@@ -770,26 +772,6 @@ export const fetchOrdersOfChat = async (
 
     // return res
     return SuccessResponse(res, 200, "Orders fetched successfully", data);
-  } catch (error) {
-    console.log(error);
-    return ErrorResponse(res, 500, "Internal server error");
-  }
-};
-
-// sendOtp
-exports.sendOtp = async (req: Request, res: Response): Promise<any> => {
-  try {
-    // fetch data
-  } catch (error) {
-    console.log(error);
-    return ErrorResponse(res, 500, "Internal server error");
-  }
-};
-
-// verify otp
-exports.verifyOtp = async (req: Request, res: Response): Promise<any> => {
-  try {
-    // fetch data
   } catch (error) {
     console.log(error);
     return ErrorResponse(res, 500, "Internal server error");

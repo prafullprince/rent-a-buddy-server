@@ -87,7 +87,6 @@ wss.on("connection", (socket) => {
         }
         // unseenMessages of particular chatId
         if (parsedData.type === "unseenMessageOfParticularChatIdOfUser") {
-            console.log("unseenMessageOfParticularChatIdOfUser");
             (0, order_controllers_1.unseenMessageOfParticularChatIdOfUser)(parsedData, socket);
         }
         // fetchAllChat

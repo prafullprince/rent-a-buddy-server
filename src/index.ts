@@ -99,7 +99,6 @@ wss.on("connection", (socket:any)=>{
 
     // unseenMessages of particular chatId
     if( parsedData.type === "unseenMessageOfParticularChatIdOfUser" ) {
-      console.log("unseenMessageOfParticularChatIdOfUser");
       unseenMessageOfParticularChatIdOfUser( parsedData, socket );
     }
 

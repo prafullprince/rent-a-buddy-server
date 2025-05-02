@@ -39,13 +39,10 @@ const fetchUserChats = (parsedData, socket) => __awaiter(void 0, void 0, void 0,
         }
         // fetch chats
         const chats = yield chat_models_1.default.find({ participants: userId })
+            .select("_id participants")
             .populate({
             path: "participants",
             select: "_id username image",
-        })
-            .populate({
-            path: "message",
-            select: "_id text isSeen receiver",
         });
         console.log("first", chats);
         // send message to client
@@ -84,6 +81,7 @@ const unseenMessages = (parsedData, socket) => __awaiter(void 0, void 0, void 0,
             throw new Error("User not found");
         }
         // find allmessage of user and update isSeen to true of receiver
+        // TODO: decrease payload
         const messages = yield message_models_1.default.find({ receiver: userId, isSeen: false });
         // send message length to client
         if (socket.readyState === WebSocket.OPEN) {
@@ -383,12 +381,15 @@ const sendMessage = (parsedData) => __awaiter(void 0, void 0, void 0, function* 
         const { sender, receiver, chatId, text } = parsedData.payload;
         // Get chat participants
         const participants = index_1.chatRoom.get(chatId);
+        console.log("participants", participants);
         if (!participants) {
             console.log("No active participants found for chatId:", chatId);
             return;
         }
         const senderSocket = participants === null || participants === void 0 ? void 0 : participants.get(sender);
         const receiverSocket = participants === null || participants === void 0 ? void 0 : participants.get(receiver);
+        console.log("senderSocket", senderSocket === null || senderSocket === void 0 ? void 0 : senderSocket.readyState);
+        console.log("receiverSocket", receiverSocket === null || receiverSocket === void 0 ? void 0 : receiverSocket.readyState);
         const isReceiverOnline = (receiverSocket === null || receiverSocket === void 0 ? void 0 : receiverSocket.readyState) === WebSocket.OPEN;
         const isChatOpen = (index_1.userMap === null || index_1.userMap === void 0 ? void 0 : index_1.userMap.get(receiver)) === chatId;
         console.log("isReceiverOnline", isReceiverOnline);
@@ -638,23 +639,3 @@ const fetchOrdersOfChat = (req, res) => __awaiter(void 0, void 0, void 0, functi
     }
 });
 exports.fetchOrdersOfChat = fetchOrdersOfChat;
-// sendOtp
-exports.sendOtp = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        // fetch data
-    }
-    catch (error) {
-        console.log(error);
-        return (0, apiResponse_helper_1.ErrorResponse)(res, 500, "Internal server error");
-    }
-});
-// verify otp
-exports.verifyOtp = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        // fetch data
-    }
-    catch (error) {
-        console.log(error);
-        return (0, apiResponse_helper_1.ErrorResponse)(res, 500, "Internal server error");
-    }
-});
