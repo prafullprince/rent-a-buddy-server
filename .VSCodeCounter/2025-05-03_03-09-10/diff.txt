@@ -1,0 +1,198 @@
+Date : 2025-05-03 03:09:10
+Directory : /Users/vector/Desktop/rent-a-buddy-server
+Total : 130 files,  4486 codes, 664 comments, 245 blanks, all 5395 lines
+
+Languages
++--------------------+------------+------------+------------+------------+------------+
+| language           | files      | code       | comment    | blank      | total      |
++--------------------+------------+------------+------------+------------+------------+
+| JavaScript         |         42 |      3,157 |        473 |         40 |      3,670 |
+| TypeScript         |         80 |      1,282 |        191 |        204 |      1,677 |
+| JSON               |          4 |         44 |          0 |          0 |         44 |
+| Properties         |          2 |          3 |          0 |          1 |          4 |
+| JSON with Comments |          2 |          0 |          0 |          0 |          0 |
++--------------------+------------+------------+------------+------------+------------+
+
+Directories
++-----------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                    | files      | code       | comment    | blank      | total      |
++-----------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                       |        130 |      4,486 |        664 |        245 |      5,395 |
+| . (Files)                                                                               |          5 |      2,599 |          0 |         13 |      2,612 |
+| ..                                                                                      |         43 |     -3,961 |       -297 |       -424 |     -4,682 |
+| ../..                                                                                   |         43 |     -3,961 |       -297 |       -424 |     -4,682 |
+| ../../..                                                                                |         43 |     -3,961 |       -297 |       -424 |     -4,682 |
+| ../../../prafullprince                                                                  |         43 |     -3,961 |       -297 |       -424 |     -4,682 |
+| ../../../prafullprince/Desktop                                                          |         43 |     -3,961 |       -297 |       -424 |     -4,682 |
+| ../../../prafullprince/Desktop/rentabuddy                                               |         43 |     -3,961 |       -297 |       -424 |     -4,682 |
+| ../../../prafullprince/Desktop/rentabuddy/server                                        |         43 |     -3,961 |       -297 |       -424 |     -4,682 |
+| ../../../prafullprince/Desktop/rentabuddy/server (Files)                                |          4 |     -2,539 |          0 |         -9 |     -2,548 |
+| ../../../prafullprince/Desktop/rentabuddy/server/dist                                   |          1 |        -25 |         -1 |         -1 |        -27 |
+| ../../../prafullprince/Desktop/rentabuddy/server/src                                    |         38 |     -1,397 |       -296 |       -414 |     -2,107 |
+| ../../../prafullprince/Desktop/rentabuddy/server/src (Files)                            |          1 |        -38 |         -7 |        -10 |        -55 |
+| ../../../prafullprince/Desktop/rentabuddy/server/src/config                             |          4 |        -47 |         -2 |        -14 |        -63 |
+| ../../../prafullprince/Desktop/rentabuddy/server/src/controllers                        |          5 |       -802 |       -215 |       -211 |     -1,228 |
+| ../../../prafullprince/Desktop/rentabuddy/server/src/helper                             |          2 |        -29 |          0 |        -12 |        -41 |
+| ../../../prafullprince/Desktop/rentabuddy/server/src/middleware                         |          1 |        -71 |        -20 |        -26 |       -117 |
+| ../../../prafullprince/Desktop/rentabuddy/server/src/models                             |         10 |       -297 |        -17 |        -72 |       -386 |
+| ../../../prafullprince/Desktop/rentabuddy/server/src/routes                             |          7 |        -25 |        -35 |        -47 |       -107 |
+| ../../../prafullprince/Desktop/rentabuddy/server/src/types                              |          7 |        -87 |          0 |        -20 |       -107 |
+| ../../../prafullprince/Desktop/rentabuddy/server/src/types/global                       |          1 |        -13 |          0 |         -3 |        -16 |
+| ../../../prafullprince/Desktop/rentabuddy/server/src/types/schema                       |          6 |        -74 |          0 |        -17 |        -91 |
+| ../../../prafullprince/Desktop/rentabuddy/server/src/zod                                |          1 |         -1 |          0 |         -2 |         -3 |
+| dist                                                                                    |         41 |      3,182 |        474 |         41 |      3,697 |
+| dist (Files)                                                                            |          1 |        111 |         23 |          1 |        135 |
+| dist/config                                                                             |          4 |         91 |          1 |          4 |         96 |
+| dist/controllers                                                                        |          9 |      1,781 |        357 |          9 |      2,147 |
+| dist/helper                                                                             |          2 |         46 |          0 |          2 |         48 |
+| dist/middleware                                                                         |          1 |         97 |         20 |          1 |        118 |
+| dist/models                                                                             |         15 |        906 |         24 |         15 |        945 |
+| dist/routes                                                                             |          8 |        107 |         40 |          8 |        155 |
+| dist/zod                                                                                |          1 |         43 |          9 |          1 |         53 |
+| src                                                                                     |         41 |      2,666 |        487 |        615 |      3,768 |
+| src (Files)                                                                             |          1 |        107 |         23 |         28 |        158 |
+| src/config                                                                              |          4 |         59 |          1 |         19 |         79 |
+| src/controllers                                                                         |          9 |      1,769 |        363 |        374 |      2,506 |
+| src/helper                                                                              |          2 |         29 |          0 |         12 |         41 |
+| src/middleware                                                                          |          1 |         71 |         20 |         26 |        117 |
+| src/models                                                                              |         15 |        523 |         31 |         96 |        650 |
+| src/routes                                                                              |          8 |         67 |         40 |         49 |        156 |
+| src/zod                                                                                 |          1 |         41 |          9 |         11 |         61 |
++-----------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-----------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+
+| filename                                                                                | language           | code       | comment    | blank      | total      |
++-----------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+
+| /Users/prafullprince/Desktop/rentabuddy/server/.env                                     | Properties         |         -8 |          0 |         -6 |        -14 |
+| /Users/prafullprince/Desktop/rentabuddy/server/dist/index.js                            | JavaScript         |        -25 |         -1 |         -1 |        -27 |
+| /Users/prafullprince/Desktop/rentabuddy/server/package-lock.json                        | JSON               |     -2,469 |          0 |         -1 |     -2,470 |
+| /Users/prafullprince/Desktop/rentabuddy/server/package.json                             | JSON               |        -48 |          0 |         -1 |        -49 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/config/cloudinary.ts                 | TypeScript         |        -14 |         -1 |         -2 |        -17 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/config/mongodb.ts                    | TypeScript         |        -13 |         -1 |         -4 |        -18 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/config/razorpay.ts                   | TypeScript         |         -7 |          0 |         -2 |         -9 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/config/redis.ts                      | TypeScript         |        -13 |          0 |         -6 |        -19 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/controllers/auth.controllers.ts      | TypeScript         |        -77 |        -15 |        -20 |       -112 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/controllers/category.controllers.ts  | TypeScript         |       -147 |        -42 |        -43 |       -232 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/controllers/event.controllers.ts     | TypeScript         |       -355 |        -76 |        -72 |       -503 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/controllers/payment.controllers.ts   | TypeScript         |       -125 |        -66 |        -51 |       -242 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/controllers/post.controllers.ts      | TypeScript         |        -98 |        -16 |        -25 |       -139 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/helper/apiResponse.helper.ts         | TypeScript         |        -14 |          0 |         -3 |        -17 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/helper/mediaUpload.helper.ts         | TypeScript         |        -15 |          0 |         -9 |        -24 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/index.ts                             | TypeScript         |        -38 |         -7 |        -10 |        -55 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/middleware/auth.middleware.ts        | TypeScript         |        -71 |        -20 |        -26 |       -117 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/models/category.models.ts            | TypeScript         |        -14 |          0 |         -4 |        -18 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/models/event.models.ts               | TypeScript         |        -31 |          0 |         -4 |        -35 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/models/post.models.ts                | TypeScript         |        -12 |         -3 |         -6 |        -21 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/models/rating.models.ts              | TypeScript         |        -18 |          0 |         -5 |        -23 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/models/section.models.ts             | TypeScript         |        -18 |          0 |         -4 |        -22 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/models/subcategory.models.ts         | TypeScript         |        -26 |          0 |         -4 |        -30 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/models/subsection.models.ts          | TypeScript         |        -22 |          0 |         -5 |        -27 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/models/transaction.models.ts         | TypeScript         |        -24 |          0 |         -4 |        -28 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/models/user.models.ts                | TypeScript         |       -103 |         -3 |         -6 |       -112 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/models/wallet.models.ts              | TypeScript         |        -29 |        -11 |        -30 |        -70 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/routes/auth.routes.ts                | TypeScript         |         -7 |         -5 |         -5 |        -17 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/routes/category.routes.ts            | TypeScript         |         -3 |         -5 |         -7 |        -15 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/routes/event.routes.ts               | TypeScript         |         -3 |         -5 |         -7 |        -15 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/routes/interaction.routes.ts         | TypeScript         |         -3 |         -5 |         -7 |        -15 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/routes/payment.routes.ts             | TypeScript         |         -3 |         -5 |         -7 |        -15 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/routes/post.routes.ts                | TypeScript         |         -3 |         -5 |         -7 |        -15 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/routes/user.routes.ts                | TypeScript         |         -3 |         -5 |         -7 |        -15 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/types/global/express.d.ts            | TypeScript         |        -13 |          0 |         -3 |        -16 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/types/schema/categorySchema.types.ts | TypeScript         |        -12 |          0 |         -4 |        -16 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/types/schema/eventSchema.types.ts    | TypeScript         |        -18 |          0 |         -6 |        -24 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/types/schema/postSchema.types.ts     | TypeScript         |         -5 |          0 |         -2 |         -7 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/types/schema/ratingSchema.types.ts   | TypeScript         |         -5 |          0 |         -1 |         -6 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/types/schema/userSchema.types.ts     | TypeScript         |        -26 |          0 |         -2 |        -28 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/types/schema/walletSchema.types.ts   | TypeScript         |         -8 |          0 |         -2 |        -10 |
+| /Users/prafullprince/Desktop/rentabuddy/server/src/zod/request.body.validation.ts       | TypeScript         |         -1 |          0 |         -2 |         -3 |
+| /Users/prafullprince/Desktop/rentabuddy/server/tsconfig.json                            | JSON with Comments |        -14 |          0 |         -1 |        -15 |
+| /Users/vector/Desktop/rent-a-buddy-server/.env                                          | Properties         |         11 |          0 |          7 |         18 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/config/cloudinary.js                     | JavaScript         |         32 |          0 |          1 |         33 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/config/mongodb.js                        | JavaScript         |         28 |          1 |          1 |         30 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/config/razorpay.js                       | JavaScript         |         15 |          0 |          1 |         16 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/config/redis.js                          | JavaScript         |         16 |          0 |          1 |         17 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/controllers/auth.controllers.js          | JavaScript         |         85 |         15 |          1 |        101 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/controllers/category.controllers.js      | JavaScript         |        187 |         46 |          1 |        234 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/controllers/event.controllers.js         | JavaScript         |        587 |         93 |          1 |        681 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/controllers/order.controllers.js         | JavaScript         |        502 |        139 |          1 |        642 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/controllers/payment.controllers.js       | JavaScript         |        172 |         25 |          1 |        198 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/controllers/post.controllers.js          | JavaScript         |        116 |         16 |          1 |        133 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/controllers/rating.controllers.js        | JavaScript         |         44 |          5 |          1 |         50 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/controllers/request.controllers.js       | JavaScript         |          1 |          0 |          1 |          2 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/controllers/user.controllers.js          | JavaScript         |         87 |         18 |          1 |        106 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/helper/apiResponse.helper.js             | JavaScript         |         18 |          0 |          1 |         19 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/helper/mediaUpload.helper.js             | JavaScript         |         28 |          0 |          1 |         29 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/index.js                                 | JavaScript         |        111 |         23 |          1 |        135 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/middleware/auth.middleware.js            | JavaScript         |         97 |         20 |          1 |        118 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/models/category.models.js                | JavaScript         |         48 |          0 |          1 |         49 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/models/chat.models.js                    | JavaScript         |         48 |          2 |          1 |         51 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/models/event.models.js                   | JavaScript         |         68 |          0 |          1 |         69 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/models/message.models.js                 | JavaScript         |         69 |          2 |          1 |         72 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/models/order.models.js                   | JavaScript         |         99 |          2 |          1 |        102 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/models/post.models.js                    | JavaScript         |         47 |          3 |          1 |         51 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/models/rating.models.js                  | JavaScript         |         51 |          0 |          1 |         52 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/models/request.models.js                 | JavaScript         |          1 |          0 |          1 |          2 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/models/section.models.js                 | JavaScript         |         49 |          1 |          1 |         51 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/models/service.models.js                 | JavaScript         |         52 |          0 |          1 |         53 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/models/subcategory.models.js             | JavaScript         |         60 |          0 |          1 |         61 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/models/subsection.models.js              | JavaScript         |         52 |          0 |          1 |         53 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/models/transaction.models.js             | JavaScript         |         59 |          0 |          1 |         60 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/models/user.models.js                    | JavaScript         |        140 |          3 |          1 |        144 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/models/wallet.models.js                  | JavaScript         |         63 |         11 |          1 |         75 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/routes/auth.routes.js                    | JavaScript         |         12 |          5 |          1 |         18 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/routes/category.routes.js                | JavaScript         |         12 |          5 |          1 |         18 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/routes/chat.routes.js                    | JavaScript         |         16 |          5 |          1 |         22 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/routes/event.routes.js                   | JavaScript         |         20 |          5 |          1 |         26 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/routes/interaction.routes.js             | JavaScript         |          8 |          5 |          1 |         14 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/routes/payment.routes.js                 | JavaScript         |         14 |          5 |          1 |         20 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/routes/post.routes.js                    | JavaScript         |          8 |          5 |          1 |         14 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/routes/user.routes.js                    | JavaScript         |         17 |          5 |          1 |         23 |
+| /Users/vector/Desktop/rent-a-buddy-server/dist/zod/request.body.validation.js           | JavaScript         |         43 |          9 |          1 |         53 |
+| /Users/vector/Desktop/rent-a-buddy-server/express.d.ts                                  | TypeScript         |         13 |          0 |          3 |         16 |
+| /Users/vector/Desktop/rent-a-buddy-server/package-lock.json                             | JSON               |      2,509 |          0 |          1 |      2,510 |
+| /Users/vector/Desktop/rent-a-buddy-server/package.json                                  | JSON               |         52 |          0 |          1 |         53 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/config/cloudinary.ts                      | TypeScript         |         24 |          0 |          6 |         30 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/config/mongodb.ts                         | TypeScript         |         13 |          1 |          4 |         18 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/config/razorpay.ts                        | TypeScript         |          9 |          0 |          3 |         12 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/config/redis.ts                           | TypeScript         |         13 |          0 |          6 |         19 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/controllers/auth.controllers.ts           | TypeScript         |         77 |         15 |         19 |        111 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/controllers/category.controllers.ts       | TypeScript         |        168 |         46 |         49 |        263 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/controllers/event.controllers.ts          | TypeScript         |        613 |         99 |        104 |        816 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/controllers/order.controllers.ts          | TypeScript         |        532 |        139 |        109 |        780 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/controllers/payment.controllers.ts        | TypeScript         |        170 |         25 |         34 |        229 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/controllers/post.controllers.ts           | TypeScript         |        105 |         16 |         26 |        147 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/controllers/rating.controllers.ts         | TypeScript         |         30 |          5 |          9 |         44 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/controllers/request.controllers.ts        | TypeScript         |          0 |          0 |          1 |          1 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/controllers/user.controllers.ts           | TypeScript         |         74 |         18 |         23 |        115 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/helper/apiResponse.helper.ts              | TypeScript         |         14 |          0 |          3 |         17 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/helper/mediaUpload.helper.ts              | TypeScript         |         15 |          0 |          9 |         24 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/index.ts                                  | TypeScript         |        107 |         23 |         28 |        158 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/middleware/auth.middleware.ts             | TypeScript         |         71 |         20 |         26 |        117 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/models/category.models.ts                 | TypeScript         |         17 |          0 |          4 |         21 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/models/chat.models.ts                     | TypeScript         |         17 |          3 |          4 |         24 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/models/event.models.ts                    | TypeScript         |         42 |          0 |          6 |         48 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/models/message.models.ts                  | TypeScript         |         43 |          3 |          4 |         50 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/models/order.models.ts                    | TypeScript         |         82 |          3 |          4 |         89 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/models/post.models.ts                     | TypeScript         |         15 |          3 |          3 |         21 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/models/rating.models.ts                   | TypeScript         |         21 |          0 |          5 |         26 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/models/request.models.ts                  | TypeScript         |          0 |          0 |          3 |          3 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/models/section.models.ts                  | TypeScript         |         18 |          2 |          6 |         26 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/models/service.models.ts                  | TypeScript         |         22 |          1 |          4 |         27 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/models/subcategory.models.ts              | TypeScript         |         32 |          0 |          6 |         38 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/models/subsection.models.ts               | TypeScript         |         22 |          1 |          6 |         29 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/models/transaction.models.ts              | TypeScript         |         24 |          0 |          4 |         28 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/models/user.models.ts                     | TypeScript         |        133 |          4 |          6 |        143 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/models/wallet.models.ts                   | TypeScript         |         35 |         11 |         31 |         77 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/routes/auth.routes.ts                     | TypeScript         |          7 |          5 |          5 |         17 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/routes/category.routes.ts                 | TypeScript         |          7 |          5 |          5 |         17 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/routes/chat.routes.ts                     | TypeScript         |         11 |          5 |          7 |         23 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/routes/event.routes.ts                    | TypeScript         |         15 |          5 |          6 |         26 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/routes/interaction.routes.ts              | TypeScript         |          3 |          5 |          7 |         15 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/routes/payment.routes.ts                  | TypeScript         |          9 |          5 |          6 |         20 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/routes/post.routes.ts                     | TypeScript         |          3 |          5 |          7 |         15 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/routes/user.routes.ts                     | TypeScript         |         12 |          5 |          6 |         23 |
+| /Users/vector/Desktop/rent-a-buddy-server/src/zod/request.body.validation.ts            | TypeScript         |         41 |          9 |         11 |         61 |
+| /Users/vector/Desktop/rent-a-buddy-server/tsconfig.json                                 | JSON with Comments |         14 |          0 |          1 |         15 |
+| Total                                                                                   |                    |      4,486 |        664 |        245 |      5,395 |
++-----------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+
