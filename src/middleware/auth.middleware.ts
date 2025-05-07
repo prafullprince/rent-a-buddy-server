@@ -9,7 +9,6 @@ export const auth = async (req: Request, res: Response, next: NextFunction): Pro
     try {
         // fetch token
         const token = req.cookies?.token || req.header("Authorization")?.replace('Bearer ','');
-        console.log("token",token);
 
         // validation
         if(!token){
@@ -18,11 +17,8 @@ export const auth = async (req: Request, res: Response, next: NextFunction): Pro
 
         // if found then decode and attach in user
         try {
-            // decode
-            console.log("decode before")
-            
+            // decode            
             const decode = jwt.verify(token, process.env.JWT_SECRET!);
-            console.log("decode is: ", decode);
             // if (typeof decode === "string") {
             //     return ErrorResponse(res,404,"Authorization failed");
             // }

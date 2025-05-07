@@ -21,17 +21,14 @@ const auth = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () 
     try {
         // fetch token
         const token = ((_a = req.cookies) === null || _a === void 0 ? void 0 : _a.token) || ((_b = req.header("Authorization")) === null || _b === void 0 ? void 0 : _b.replace('Bearer ', ''));
-        console.log("token", token);
         // validation
         if (!token) {
             return (0, apiResponse_helper_1.ErrorResponse)(res, 404, "Token not found");
         }
         // if found then decode and attach in user
         try {
-            // decode
-            console.log("decode before");
+            // decode            
             const decode = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
-            console.log("decode is: ", decode);
             // if (typeof decode === "string") {
             //     return ErrorResponse(res,404,"Authorization failed");
             // }

@@ -75,6 +75,11 @@ wss.on("connection", (socket) => {
             console.log("acceptOrder");
             (0, order_controllers_1.acceptOrder)(parsedData, socket);
         }
+        // reloadChat
+        if (parsedData.type === "reloadChatPage") {
+            console.log("reloadChatPagesd,f sdm fdms fmndsfnm");
+            (0, order_controllers_1.reloadChatPage)(parsedData, socket);
+        }
         // markAsRead
         if (parsedData.type === "markAsRead") {
             console.log("markAsRead");

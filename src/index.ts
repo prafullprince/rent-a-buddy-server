@@ -19,7 +19,7 @@ import paymentRoutes from "./routes/payment.routes";
 import connectDB from "./config/mongodb";
 import { cloudinaryConnect } from "./config/cloudinary";
 import { WebSocketServer } from "ws";
-import { acceptOrder, fetchUserChats, markAsRead, registerUserInChatRoom, requestOrder, sendMessage, unseenMessageOfParticularChatIdOfUser, unseenMessages } from "./controllers/order.controllers";
+import { acceptOrder, fetchUserChats, markAsRead, registerUserInChatRoom, reloadChatPage, requestOrder, sendMessage, unseenMessageOfParticularChatIdOfUser, unseenMessages } from "./controllers/order.controllers";
 
 dotenv.config(); // Load environment variables
 
@@ -83,6 +83,12 @@ wss.on("connection", (socket:any)=>{
     if( parsedData.type === "acceptOrder" ) {
       console.log("acceptOrder");
       acceptOrder( parsedData, socket );
+    }
+
+    // reloadChat
+    if (parsedData.type === "reloadChatPage" ) {
+      console.log("reloadChatPagesd,f sdm fdms fmndsfnm");
+      reloadChatPage(parsedData, socket);
     }
 
     // markAsRead

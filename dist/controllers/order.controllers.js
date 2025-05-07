@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.fetchOrdersOfChat = exports.acceptOrder = exports.fetchOtherUser = exports.fetchOrderHistory = exports.fetchChat = exports.fetchAllMessages = exports.sendMessage = exports.registerUserInChatRoom = exports.removeUserFromChatRoom = exports.requestOrder = exports.unseenMessageOfParticularChatIdOfUser = exports.markAsRead = exports.unseenMessages = exports.fetchUserChats = void 0;
+exports.reloadChatPage = exports.fetchOrdersOfChat = exports.acceptOrder = exports.fetchOtherUser = exports.fetchOrderHistory = exports.fetchChat = exports.fetchAllMessages = exports.sendMessage = exports.registerUserInChatRoom = exports.removeUserFromChatRoom = exports.requestOrder = exports.unseenMessageOfParticularChatIdOfUser = exports.markAsRead = exports.unseenMessages = exports.fetchUserChats = void 0;
 const apiResponse_helper_1 = require("../helper/apiResponse.helper");
 const user_models_1 = __importDefault(require("../models/user.models"));
 const event_models_1 = __importDefault(require("../models/event.models"));
@@ -536,7 +536,7 @@ const fetchOtherUser = (req, res) => __awaiter(void 0, void 0, void 0, function*
 exports.fetchOtherUser = fetchOtherUser;
 // acceptOrder
 const acceptOrder = (parsedData, socket) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
+    var _a, _b, _c, _d, _e, _f;
     try {
         // validation
         if (!((_a = parsedData === null || parsedData === void 0 ? void 0 : parsedData.payload) === null || _a === void 0 ? void 0 : _a.msgId)) {
@@ -576,10 +576,13 @@ const acceptOrder = (parsedData, socket) => __awaiter(void 0, void 0, void 0, fu
             index_1.chatRoom.set((_c = message === null || message === void 0 ? void 0 : message.chatId) === null || _c === void 0 ? void 0 : _c.toString(), new Map());
         }
         const participants = index_1.chatRoom.get((_d = message === null || message === void 0 ? void 0 : message.chatId) === null || _d === void 0 ? void 0 : _d.toString());
-        participants === null || participants === void 0 ? void 0 : participants.set((_e = message === null || message === void 0 ? void 0 : message.sender) === null || _e === void 0 ? void 0 : _e.toString(), socket);
-        participants === null || participants === void 0 ? void 0 : participants.set((_f = message === null || message === void 0 ? void 0 : message.receiver) === null || _f === void 0 ? void 0 : _f.toString(), socket);
-        const senderWs = participants === null || participants === void 0 ? void 0 : participants.get((_g = message === null || message === void 0 ? void 0 : message.sender) === null || _g === void 0 ? void 0 : _g.toString());
-        const receiverWs = participants === null || participants === void 0 ? void 0 : participants.get((_h = message === null || message === void 0 ? void 0 : message.receiver) === null || _h === void 0 ? void 0 : _h.toString());
+        // participants?.set(message?.sender?.toString(), socket);
+        // participants?.set(message?.receiver?.toString(), socket);
+        if (!participants) {
+            return;
+        }
+        const senderWs = participants === null || participants === void 0 ? void 0 : participants.get((_e = message === null || message === void 0 ? void 0 : message.sender) === null || _e === void 0 ? void 0 : _e.toString());
+        const receiverWs = participants === null || participants === void 0 ? void 0 : participants.get((_f = message === null || message === void 0 ? void 0 : message.receiver) === null || _f === void 0 ? void 0 : _f.toString());
         // send response to client
         senderWs === null || senderWs === void 0 ? void 0 : senderWs.send(JSON.stringify({
             type: "orderAccepted",
@@ -639,3 +642,54 @@ const fetchOrdersOfChat = (req, res) => __awaiter(void 0, void 0, void 0, functi
     }
 });
 exports.fetchOrdersOfChat = fetchOrdersOfChat;
+const reloadChatPage = (parsedData, socket) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // validation
+        if (!(parsedData === null || parsedData === void 0 ? void 0 : parsedData.payload)) {
+            throw new Error("Invalid payload structure");
+        }
+        // fetch data
+        const { receiverId, chatId } = parsedData.payload;
+        console.log("receiverId::::", receiverId);
+        // validation
+        if (!receiverId) {
+            throw new Error("Invalid receiverId");
+        }
+        // fetch chat
+        const chat = yield chat_models_1.default.findById(chatId);
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+        // fetch participants
+        const participants = index_1.chatRoom.get(chatId);
+        // if participants exist delete user from participants
+        if (!participants) {
+            return;
+        }
+        const receiverWs = participants.get(receiverId);
+        console.log("receiverWs::::", receiverWs);
+        if (!receiverWs) {
+            return;
+        }
+        // if chatRoom is empty delete chatRoom
+        if (index_1.chatRoom.size === 0) {
+            index_1.chatRoom.delete(chatId);
+        }
+        console.log("receiverWs::::", receiverWs.readyState);
+        // send message to client
+        receiverWs === null || receiverWs === void 0 ? void 0 : receiverWs.send(JSON.stringify({
+            type: "reloadChat",
+            payload: {
+                success: true,
+                message: "Chat reloaded successfully",
+                chatId: chatId,
+            },
+        }));
+        return;
+    }
+    catch (error) {
+        console.log(error);
+        return;
+    }
+});
+exports.reloadChatPage = reloadChatPage;

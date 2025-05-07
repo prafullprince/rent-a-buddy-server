@@ -436,7 +436,6 @@ export const registerUserInChatRoom = async (
   }
 };
 
-
 // sendMessage
 export const sendMessage = async (parsedData: any): Promise<any> => {
   try {
@@ -649,7 +648,6 @@ export const acceptOrder = async (parsedData: any, socket: any) => {
     if (!parsedData?.payload?.msgId) {
       throw new Error("Invalid payload structure");
     }
-
     // fetch data
     const { msgId, mark } = parsedData.payload;
 
@@ -702,8 +700,12 @@ export const acceptOrder = async (parsedData: any, socket: any) => {
 
     const participants = chatRoom.get(message?.chatId?.toString());
 
-    participants?.set(message?.sender?.toString(), socket);
-    participants?.set(message?.receiver?.toString(), socket);
+    // participants?.set(message?.sender?.toString(), socket);
+    // participants?.set(message?.receiver?.toString(), socket);
+
+    if(!participants){
+      return;
+    }
 
     const senderWs = participants?.get(message?.sender?.toString());
     const receiverWs = participants?.get(message?.receiver?.toString());
@@ -775,5 +777,67 @@ export const fetchOrdersOfChat = async (
   } catch (error) {
     console.log(error);
     return ErrorResponse(res, 500, "Internal server error");
+  }
+};
+
+export const reloadChatPage = async (parsedData: any, socket: any) => {
+  try {
+    // validation
+    if (!parsedData?.payload) {
+      throw new Error("Invalid payload structure");
+    }
+
+    // fetch data
+    const { receiverId, chatId } = parsedData.payload;
+    console.log("receiverId::::", receiverId);
+    // validation
+    if (!receiverId) {
+      throw new Error("Invalid receiverId");
+    }
+
+    // fetch chat
+    const chat = await Chat.findById(chatId);
+
+    if(!chat) {
+      throw new Error("Chat not found");
+    }
+
+    // fetch participants
+    const participants = chatRoom.get(chatId);
+
+    // if participants exist delete user from participants
+    if(!participants) {
+      return;
+    }
+
+    const receiverWs = participants.get(receiverId);  
+    console.log("receiverWs::::", receiverWs);
+    if(!receiverWs) {
+      return;
+    }
+
+    // if chatRoom is empty delete chatRoom
+    if (chatRoom.size === 0) {
+      chatRoom.delete(chatId);
+    }
+
+    console.log("receiverWs::::", receiverWs.readyState);
+
+    // send message to client
+    receiverWs?.send(
+      JSON.stringify({
+        type: "reloadChat",
+        payload: {
+          success: true,
+          message: "Chat reloaded successfully",
+          chatId: chatId,
+        },
+      })
+    );
+
+    return;
+  } catch (error) {
+    console.log(error);
+    return;
   }
 };
