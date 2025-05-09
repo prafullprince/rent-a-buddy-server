@@ -6,6 +6,7 @@ import compression from "compression";
 import cookieParser from 'cookie-parser';
 import fileUpload from 'express-fileupload';
 import http from 'http';
+import rateLimit from "express-rate-limit";
 
 // routes
 import authRoutes from "./routes/auth.routes";
@@ -118,6 +119,20 @@ wss.on("connection", (socket:any)=>{
 
 })
 
+// rate limit
+const globalLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100, // Limit each IP to 100 requests per windowMs
+  handler: (req, res) => {
+    return res.status(429).json({
+      success: false,
+      message: "Too many requests. Please try after 1 minute.",
+    });
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+})
+
 // Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -136,6 +151,8 @@ app.use(cors());
 app.use(helmet());
 app.use(compression());
 // app.use(morgan("combined")); // Logs requests
+app.use(globalLimiter);
+
 
 // PORT
 const PORT = process.env.PORT || 10000;
