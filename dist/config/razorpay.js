@@ -11,5 +11,5 @@ exports.instance = new razorpay_1.default({
     key_id: process.env.RAZORPAY_KEY_ID,
     key_secret: process.env.RAZORPAY_KEY_SECRET
 });
-console.log("key_id", process.env.RAZORPAY_KEY_ID);
-console.log("key_secret", process.env.RAZORPAY_KEY_SECRET);
+// console.log("key_id",process.env.RAZORPAY_KEY_ID)
+// console.log("key_secret",process.env.RAZORPAY_KEY_SECRET)

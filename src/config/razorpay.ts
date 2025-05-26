@@ -7,5 +7,5 @@ export const instance = new Razorpay({
     key_secret: process.env.RAZORPAY_KEY_SECRET!
 });
 
-console.log("key_id",process.env.RAZORPAY_KEY_ID)
-console.log("key_secret",process.env.RAZORPAY_KEY_SECRET)
+// console.log("key_id",process.env.RAZORPAY_KEY_ID)
+// console.log("key_secret",process.env.RAZORPAY_KEY_SECRET)

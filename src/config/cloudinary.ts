@@ -6,7 +6,7 @@ dotenv.config(); // Ensure this runs before accessing process.env
 export const cloudinaryConnect = () => {
   try {
     console.log("Cloudinary ENV Vars:", {
-      CLOUD_NAME: process.env.CLOUD_NAME,
+      CLOUD_NAME: process.env.CLOUD_NAME ? "✅" : "❌ MISSING",
       API_KEY: process.env.API_KEY ? "✅" : "❌ MISSING",
       API_SECRET: process.env.API_SECRET ? "✅" : "❌ MISSING",
     });

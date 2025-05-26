@@ -12,6 +12,7 @@ const compression_1 = __importDefault(require("compression"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const express_fileupload_1 = __importDefault(require("express-fileupload"));
 const http_1 = __importDefault(require("http"));
+const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 // routes
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
 const category_routes_1 = __importDefault(require("./routes/category.routes"));
@@ -101,6 +102,19 @@ wss.on("connection", (socket) => {
         }
     });
 });
+// rate limit
+const globalLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 100, // Limit each IP to 100 requests per windowMs
+    handler: (req, res) => {
+        return res.status(429).json({
+            success: false,
+            message: "Too many requests. Please try after 1 minute.",
+        });
+    },
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
 // Middleware
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use(express_1.default.json());
@@ -117,6 +131,7 @@ app.use((0, cors_1.default)());
 app.use((0, helmet_1.default)());
 app.use((0, compression_1.default)());
 // app.use(morgan("combined")); // Logs requests
+app.use(globalLimiter);
 // PORT
 const PORT = process.env.PORT || 10000;
 // db

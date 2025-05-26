@@ -19,7 +19,7 @@ const dotenv_1 = require("dotenv");
 const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const conn = yield mongoose_1.default.connect(process.env.MONGODB_URI || 'mongodb+srv://prafullprince3:sdffLNYcHwXR35YD@rent.eyar7.mongodb.net/');
-        console.log(`MongoDB connected: ${conn.connection.host}`);
+        console.log(`MongoDB connected`);
     }
     catch (error) {
         console.error(`Error: ${error.message}`);
