@@ -791,7 +791,7 @@ export const allavailableEvents = async (
   try {
     const events = await Event.find({ isActive: true })
       .sort({ createdAt: -1 })
-      .limit(10)
+      .limit(25)
       .populate([
         { path: "user", select: "_id username" },
         {
