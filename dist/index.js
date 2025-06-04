@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.userMap = exports.chatRoom = void 0;
+exports.receiverSocket = exports.senderSocket = exports.userMap = exports.chatRoom = void 0;
 const express_1 = __importDefault(require("express"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const cors_1 = __importDefault(require("cors"));
@@ -30,8 +30,11 @@ dotenv_1.default.config(); // Load environment variables
 const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);
 const wss = new ws_1.WebSocketServer({ server });
+// memory for socket
 exports.chatRoom = new Map();
 exports.userMap = new Map();
+exports.senderSocket = null;
+exports.receiverSocket = null;
 // wesocket logic
 wss.on("connection", (socket) => {
     console.log("connected");
@@ -99,6 +102,54 @@ wss.on("connection", (socket) => {
         if (parsedData.type === "fetchAllChat") {
             console.log("fetchAllChat");
             (0, order_controllers_1.fetchUserChats)(parsedData, socket);
+        }
+        // createOffer
+        else if (parsedData.type === "createOffer") {
+            console.log("createOffer");
+            const { chatId, userId, offer } = parsedData.payload;
+            // get participants
+            const participants = exports.chatRoom.get(chatId);
+            if (!participants)
+                return;
+            // get receiver socket
+            const receiverSocket = participants.get(userId);
+            // if receiverSocket is not available return
+            if (!receiverSocket)
+                return;
+            // send offer to receiver
+            receiverSocket.send(JSON.stringify({ type: "createOffer", payload: offer }));
+        }
+        // createAnswer
+        else if (parsedData.type === "createAnswer") {
+            console.log("createAnswer");
+            const { chatId, userId, sdp } = parsedData.payload;
+            // get participants
+            const participants = exports.chatRoom.get(chatId);
+            if (!participants)
+                return;
+            // get sender socket
+            const senderSocket = participants.get(userId);
+            // if senderSocket is not available return
+            if (!senderSocket)
+                return;
+            // send offer to sender
+            senderSocket.send(JSON.stringify({ type: "createAnswer", payload: sdp }));
+        }
+        // add-ice-candidate
+        else if (parsedData.type === "add-ice-candidate") {
+            console.log("add-ice-candidate");
+            const { chatId, userId, candidate } = parsedData.payload;
+            // get participants
+            const participants = exports.chatRoom.get(chatId);
+            if (!participants)
+                return;
+            // get receiver socket
+            const receiverSocket = participants.get(userId);
+            // if receiverSocket is not available return
+            if (!receiverSocket)
+                return;
+            // add-ice-candidate over receiver
+            receiverSocket.send(JSON.stringify({ type: "add-ice-candidate", payload: candidate }));
         }
     });
 });

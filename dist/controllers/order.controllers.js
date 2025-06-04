@@ -381,7 +381,6 @@ const sendMessage = (parsedData) => __awaiter(void 0, void 0, void 0, function* 
         const { sender, receiver, chatId, text } = parsedData.payload;
         // Get chat participants
         const participants = index_1.chatRoom.get(chatId);
-        console.log("participants", participants);
         if (!participants) {
             console.log("No active participants found for chatId:", chatId);
             return;

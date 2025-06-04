@@ -655,7 +655,7 @@ const allavailableEvents = (req, res) => __awaiter(void 0, void 0, void 0, funct
     try {
         const events = yield event_models_1.default.find({ isActive: true })
             .sort({ createdAt: -1 })
-            .limit(10)
+            .limit(25)
             .populate([
             { path: "user", select: "_id username" },
             {
