@@ -163,6 +163,9 @@ wss.on("connection", (socket:any)=>{
 
       const { chatId, userId, candidate } = parsedData.payload;
 
+      // check socket of which one sender or receiver
+      
+
       // get participants
       const participants = chatRoom.get(chatId);
       if(!participants) return;

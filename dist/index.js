@@ -139,6 +139,7 @@ wss.on("connection", (socket) => {
         else if (parsedData.type === "add-ice-candidate") {
             console.log("add-ice-candidate");
             const { chatId, userId, candidate } = parsedData.payload;
+            // check socket of which one sender or receiver
             // get participants
             const participants = exports.chatRoom.get(chatId);
             if (!participants)
