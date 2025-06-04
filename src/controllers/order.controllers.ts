@@ -455,7 +455,7 @@ export const sendMessage = async (parsedData: any): Promise<any> => {
 
     // Get chat participants
     const participants = chatRoom.get(chatId);
-    console.log("participants", participants);
+    
     if (!participants) {
       console.log("No active participants found for chatId:", chatId);
       return;

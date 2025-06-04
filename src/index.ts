@@ -29,8 +29,11 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
+// memory for socket
 export const chatRoom = new Map<string, Map<string, WebSocket>>();
 export const userMap = new Map<string, string>();
+export let senderSocket: null | WebSocket = null;
+export let receiverSocket: null | WebSocket = null;
 
 // wesocket logic
 wss.on("connection", (socket:any)=>{
@@ -115,6 +118,64 @@ wss.on("connection", (socket:any)=>{
       fetchUserChats( parsedData, socket );
     }
 
+    // createOffer
+    else if( parsedData.type === "createOffer" ) {
+      console.log("createOffer");
+      const { chatId, userId, offer } = parsedData.payload;
+
+      // get participants
+      const participants = chatRoom.get(chatId);
+      if(!participants) return;
+
+      // get receiver socket
+      const receiverSocket = participants.get(userId);
+
+      // if receiverSocket is not available return
+      if(!receiverSocket) return;
+
+      // send offer to receiver
+      receiverSocket.send(JSON.stringify({ type: "createOffer", payload: offer }));
+    }
+
+    // createAnswer
+    else if( parsedData.type === "createAnswer" ) {
+      console.log("createAnswer");
+
+      const { chatId, userId, sdp } = parsedData.payload;
+      
+      // get participants
+      const participants = chatRoom.get(chatId);
+      if(!participants) return;
+
+      // get sender socket
+      const senderSocket = participants.get(userId);
+
+      // if senderSocket is not available return
+      if(!senderSocket) return;
+
+      // send offer to sender
+      senderSocket.send(JSON.stringify({ type: "createAnswer", payload: sdp }));
+    }
+
+    // add-ice-candidate
+    else if( parsedData.type === "add-ice-candidate" ) {
+      console.log("add-ice-candidate");
+
+      const { chatId, userId, candidate } = parsedData.payload;
+
+      // get participants
+      const participants = chatRoom.get(chatId);
+      if(!participants) return;
+
+      // get receiver socket
+      const receiverSocket = participants.get(userId);
+
+      // if receiverSocket is not available return
+      if(!receiverSocket) return;
+  
+      // add-ice-candidate over receiver
+      receiverSocket.send(JSON.stringify({ type: "add-ice-candidate", payload: candidate }));
+    }
   })
 
 })
