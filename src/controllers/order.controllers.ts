@@ -108,7 +108,7 @@ export const markAsRead = async (parsedData: any, socket: any) => {
     }
 
     // fetch data
-    const { chatId, userId } = parsedData.payload;
+    const { chatId, userId, receiverId } = parsedData.payload;
 
     // validation
     if (!chatId || !userId) {
@@ -124,14 +124,22 @@ export const markAsRead = async (parsedData: any, socket: any) => {
     const participants = chatRoom.get(chatId);
     participants?.set(userId, socket);
 
-    // find allmessage of chat and update isSeen to true of receiver
-    const messages = await Message.find({ chatId: chatId, receiver: userId });
+    // find allmessage of chat and update isSeen to true of sender message
+    const messages = await Message.find({ chatId: chatId, receiver: receiverId });
     if (messages.length > 0) {
       await Message.updateMany(
-        { chatId: chatId, receiver: userId },
+        { chatId: chatId, receiver: receiverId },
         { $set: { isSeen: true } }
       );
     }
+
+    // // if sender is live mark their message as seen
+    // const senderSocket = participants?.get(receiverId);
+    // if(senderSocket && senderSocket?.readyState === WebSocket.OPEN){
+    //   senderSocket.send(
+    //     JSON.stringify({ type: "markAsReadYourMessage" })
+    //   );
+    // }
 
     return;
   } catch (error) {

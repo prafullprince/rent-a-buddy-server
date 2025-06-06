@@ -108,7 +108,7 @@ const markAsRead = (parsedData, socket) => __awaiter(void 0, void 0, void 0, fun
             throw new Error("Invalid payload structure");
         }
         // fetch data
-        const { chatId, userId } = parsedData.payload;
+        const { chatId, userId, receiverId } = parsedData.payload;
         // validation
         if (!chatId || !userId) {
             throw new Error("Invalid payload structure");
@@ -120,11 +120,18 @@ const markAsRead = (parsedData, socket) => __awaiter(void 0, void 0, void 0, fun
         // participants
         const participants = index_1.chatRoom.get(chatId);
         participants === null || participants === void 0 ? void 0 : participants.set(userId, socket);
-        // find allmessage of chat and update isSeen to true of receiver
-        const messages = yield message_models_1.default.find({ chatId: chatId, receiver: userId });
+        // find allmessage of chat and update isSeen to true of sender message
+        const messages = yield message_models_1.default.find({ chatId: chatId, receiver: receiverId });
         if (messages.length > 0) {
-            yield message_models_1.default.updateMany({ chatId: chatId, receiver: userId }, { $set: { isSeen: true } });
+            yield message_models_1.default.updateMany({ chatId: chatId, receiver: receiverId }, { $set: { isSeen: true } });
         }
+        // // if sender is live mark their message as seen
+        // const senderSocket = participants?.get(receiverId);
+        // if(senderSocket && senderSocket?.readyState === WebSocket.OPEN){
+        //   senderSocket.send(
+        //     JSON.stringify({ type: "markAsReadYourMessage" })
+        //   );
+        // }
         return;
     }
     catch (error) {
