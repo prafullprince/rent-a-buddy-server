@@ -165,7 +165,6 @@ wss.on("connection", (socket:any)=>{
 
       // check socket of which one sender or receiver
       
-
       // get participants
       const participants = chatRoom.get(chatId);
       if(!participants) return;
@@ -178,6 +177,25 @@ wss.on("connection", (socket:any)=>{
   
       // add-ice-candidate over receiver
       receiverSocket.send(JSON.stringify({ type: "add-ice-candidate", payload: candidate }));
+    }
+
+    else if( parsedData.type === "endCall" ) {
+      console.log("endCall");
+
+      const { chatId, userId } = parsedData.payload;
+
+      // get participants
+      const participants = chatRoom.get(chatId);
+      if(!participants) return;
+
+      // get sender socket
+      const receiverSocket = participants.get(userId);
+
+      // if senderSocket is not available return
+      if(!receiverSocket) return;
+
+      // endCall over sender
+      receiverSocket.send(JSON.stringify({ type: "endCall" }));
     }
   })
 

@@ -152,6 +152,21 @@ wss.on("connection", (socket) => {
             // add-ice-candidate over receiver
             receiverSocket.send(JSON.stringify({ type: "add-ice-candidate", payload: candidate }));
         }
+        else if (parsedData.type === "endCall") {
+            console.log("endCall");
+            const { chatId, userId } = parsedData.payload;
+            // get participants
+            const participants = exports.chatRoom.get(chatId);
+            if (!participants)
+                return;
+            // get sender socket
+            const receiverSocket = participants.get(userId);
+            // if senderSocket is not available return
+            if (!receiverSocket)
+                return;
+            // endCall over sender
+            receiverSocket.send(JSON.stringify({ type: "endCall" }));
+        }
     });
 });
 // rate limit
