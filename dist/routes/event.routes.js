@@ -14,6 +14,7 @@ const router = express_1.default.Router();
 router.post('/createEvent', auth_middleware_1.auth, auth_middleware_1.isBuddy, event_controllers_1.createEvent);
 router.post('/published', auth_middleware_1.auth, auth_middleware_1.isBuddy, event_controllers_1.PublishedDraft);
 router.post('/createService', auth_middleware_1.auth, auth_middleware_1.isBuddy, event_controllers_1.createService);
+router.post('/editService', auth_middleware_1.auth, auth_middleware_1.isBuddy, event_controllers_1.editService);
 router.post('/infinteEventsWithFilter', event_controllers_1.infiniteEventsWithFilterHomepage);
 router.post('/getEventSummary', auth_middleware_1.auth, auth_middleware_1.isBuddy, event_controllers_1.eventSummary);
 router.get('/getEventSummaryOfUser', auth_middleware_1.auth, auth_middleware_1.isBuddy, event_controllers_1.eventSummaryOfUser);
@@ -21,5 +22,6 @@ router.post('/editEvent', auth_middleware_1.auth, auth_middleware_1.isBuddy, eve
 router.post('/getEventById', event_controllers_1.eventDetailsById);
 router.get('/availableEvents', event_controllers_1.allavailableEvents);
 router.post('/markAsActiveInactive', auth_middleware_1.auth, auth_middleware_1.isBuddy, event_controllers_1.markAsActiveInactive);
+router.post('/serviceOfParticularEvent', auth_middleware_1.auth, auth_middleware_1.isBuddy, event_controllers_1.serviceOfParticularEvent);
 // export router
 exports.default = router;

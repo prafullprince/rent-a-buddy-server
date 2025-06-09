@@ -52,7 +52,7 @@ const userSchema:Schema = new Schema({
     role: {
         type: String,
         enum: ["User", "Admin","Buddy"],
-        default: "User",
+        default: "Buddy",
     },
     favourite: [{
         type: mongoose.Schema.Types.ObjectId,

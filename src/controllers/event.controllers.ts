@@ -262,7 +262,140 @@ export const createService = async (
 };
 
 // editService
+export const editService = async (req:Request, res:Response): Promise<any> => {
+  try {
+    // fetch data
+    const userId = req.user?.id;
+    const { eventId, serviceData } = req.body;
 
+    // Validate input
+    if (
+      !userId ||
+      !eventId ||
+      !Array.isArray(serviceData) ||
+      serviceData.length === 0
+    ) {
+      return ErrorResponse(
+        res,
+        400,
+        "All fields are required and serviceData must be a non-empty array"
+      );
+    }
+
+    // Validate ObjectIds
+    if (
+      !mongoose.Types.ObjectId.isValid(userId) ||
+      !mongoose.Types.ObjectId.isValid(eventId)
+    ) {
+      return ErrorResponse(res, 400, "Invalid userId or eventId");
+    }
+
+    // Fetch user and event in parallel
+    const [isUser, isEvent] = await Promise.all([
+      User.findById(userId).select("_id"),
+      Event.findById(eventId).select("_id service"),
+    ]);
+
+    if (!isUser || !isEvent) {
+      return ErrorResponse(res, 404, "User or Event not found");
+    }
+
+    // find services
+    const service = await Service.findOne({ userId: isUser._id, eventId: isEvent._id });
+
+    // delete sections and subsections
+    if(service?.sections.length === 0 || !service) {
+      return ErrorResponse(res, 400, "No sections found");
+    }
+    const oldSections = await Section.find({ _id: { $in: service?.sections } });
+    
+    // delete allSubSections
+    await Promise.all(
+      oldSections.map(async (section:any)=>{
+        return await SubSection.deleteMany({ _id: { $in: section.subSections } });
+      })
+    )
+
+    // delete sections
+    await Section.deleteMany({ _id: { $in: service?.sections } });
+
+    // process service data
+    const sections = await Promise.all(
+      serviceData.map(async (categoryData: any) => {
+
+        // validation
+        if (!categoryData.id || !mongoose.Types.ObjectId.isValid(categoryData.id)) {
+          throw new Error("Invalid category ID");
+        }
+
+        // fetch category
+        const category = await Category.findById(categoryData.id).select("_id");
+        if (!category) {
+          throw new Error("Category not found");
+        }
+
+        // create section
+        const section = await Section.create({ categoryId: category._id });
+
+        // handle subcategories
+        if (
+          Array.isArray(categoryData.subCategories) &&
+          categoryData.subCategories.length > 0
+        ) {
+          const subCategoryIds = categoryData.subCategories
+            .map((sub: any) =>
+              mongoose.Types.ObjectId.isValid(sub.id)
+                ? new mongoose.Types.ObjectId(sub.id)
+                : null
+            )
+            .filter((id: any) => id !== null);
+
+          const validSubCategories = await SubCategory.find({
+            _id: { $in: subCategoryIds },
+          }).select("_id");
+
+          if (validSubCategories.length !== subCategoryIds.length) {
+            throw new Error("One or more subcategories are invalid");
+          }
+
+          // create subSections
+          const subSections = await Promise.all(
+            validSubCategories.map(async (sub: any) => {
+              return SubSection.create({
+                subCategoryId: sub._id,
+                about: categoryData.subCategories.find(
+                  (s: any) => s.id === sub._id.toString()
+                )?.about,
+                price: categoryData.subCategories.find(
+                  (s: any) => s.id === sub._id.toString()
+                )?.price,
+              });
+            })
+          );
+
+          // update section with subSections
+          await Section.findByIdAndUpdate(section._id, {
+            $push: { subSections: { $each: subSections.map((s) => s._id) } },
+          });
+        }
+
+        // return section
+        return section;
+      })
+    )
+
+    // update services
+    service.sections = sections.map((section) => section._id);
+    await service.save();
+
+    // return res
+    return SuccessResponse(res, 200, "Service edited successfully", true);
+
+  } catch (error) {
+    console.log(error);
+    return ErrorResponse(res, 500, "Internal server");
+  }
+}
 
 // published/draft
 export const PublishedDraft = async (
@@ -810,6 +943,54 @@ export const allavailableEvents = async (
     return SuccessResponse(res, 200, "Events fetched successfully", events);
   } catch (error) {
     console.error("Error fetching events:", error);
+    return ErrorResponse(res, 500, "Internal server error");
+  }
+};
+
+// serviceOfParticularEvent
+export const serviceOfParticularEvent = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    // fetch data
+    const { eventId } = req.body;
+
+    if (!eventId) {
+      return ErrorResponse(res, 400, "All fields are required");
+    }
+
+    // validation
+    if (!mongoose.isValidObjectId(eventId)) {
+      return ErrorResponse(res, 400, "Invalid eventId");
+    }
+
+    // data
+    const data = await Event.findOne({ _id: eventId }).select("_id")
+      .populate({
+        path: "service",
+        populate: {
+          path: "sections",
+          populate: [
+            {
+              path: "categoryId",
+              select: "_id",
+            },
+            {
+              path: "subSections",
+              populate: {
+                path: "subCategoryId",
+                select: "_id",
+              },
+            },
+          ],
+        },
+      });
+
+    // return res
+    return SuccessResponse(res, 200, "Service of this event fetched successfully", data);
+  } catch (error) {
+    console.log(error);
     return ErrorResponse(res, 500, "Internal server error");
   }
 };

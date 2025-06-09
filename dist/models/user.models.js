@@ -56,7 +56,7 @@ const userSchema = new mongoose_1.Schema({
     role: {
         type: String,
         enum: ["User", "Admin", "Buddy"],
-        default: "User",
+        default: "Buddy",
     },
     favourite: [{
             type: mongoose_1.default.Schema.Types.ObjectId,

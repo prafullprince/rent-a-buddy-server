@@ -431,6 +431,7 @@ export const registerUserInChatRoom = async (
 
     // Add or update participant socket
     const participants = chatRoom.get(chatId)!;
+
     participants.set(userId, socket); // Always update to ensure the latest socket
 
     // Handle disconnection
