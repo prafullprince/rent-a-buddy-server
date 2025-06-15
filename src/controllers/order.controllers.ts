@@ -126,7 +126,7 @@ export const markAsRead = async (parsedData: any, socket: any) => {
     const receiverSocket = participants?.get(receiverId); 
 
     // find allmessage of chat and update isSeen to true of sender message
-    const messages = await Message.find({ chatId: chatId, receiver: userId, sender: receiverId });
+    const messages = await Message.find({ chatId: chatId, receiver: userId, sender: receiverId, isSeen: false });
     if (messages.length > 0) {
       await Message.updateMany(
         { chatId: chatId, receiver: userId, sender: receiverId },
