@@ -115,20 +115,21 @@ export const markAsRead = async (parsedData: any, socket: any) => {
       throw new Error("Invalid payload structure");
     }
 
-    // chatRoom
-    if (!chatRoom.get(chatId)) {
-      chatRoom.set(chatId, new Map());
-    }
+    // // chatRoom
+    // if (!chatRoom.get(chatId)) {
+    //   chatRoom.set(chatId, new Map());
+    // }
 
     // participants
     const participants = chatRoom.get(chatId);
-    participants?.set(userId, socket);
+    const senderSocket = participants?.get(userId);
+    const receiverSocket = participants?.get(receiverId); 
 
     // find allmessage of chat and update isSeen to true of sender message
-    const messages = await Message.find({ chatId: chatId, receiver: receiverId });
+    const messages = await Message.find({ chatId: chatId, receiver: receiverId, sender: userId });
     if (messages.length > 0) {
       await Message.updateMany(
-        { chatId: chatId, receiver: receiverId },
+        { chatId: chatId, receiver: receiverId, sender: userId },
         { $set: { isSeen: true } }
       );
     }
@@ -140,6 +141,13 @@ export const markAsRead = async (parsedData: any, socket: any) => {
     //     JSON.stringify({ type: "markAsReadYourMessage" })
     //   );
     // }
+
+    // send response to client
+    if(receiverSocket && receiverSocket?.readyState === WebSocket.OPEN){
+      receiverSocket.send(
+        JSON.stringify({ type: "markAsReadYourMessage", payload: { success: true, isSeen: true } })
+      );
+    }
 
     return;
   } catch (error) {
