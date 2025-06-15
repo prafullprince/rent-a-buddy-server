@@ -102,50 +102,51 @@ export const unseenMessages = async (parsedData: any, socket: any) => {
 // markAsRead
 export const markAsRead = async (parsedData: any, socket: any) => {
   try {
-    // validation
     if (!parsedData?.payload) {
       throw new Error("Invalid payload structure");
     }
 
-    // fetch data
     const { chatId, userId, receiverId } = parsedData.payload;
-
-    // validation
     if (!chatId || !userId) {
       throw new Error("Invalid payload structure");
     }
 
-    // // chatRoom
-    // if (!chatRoom.get(chatId)) {
-    //   chatRoom.set(chatId, new Map());
-    // }
-
-    // participants
     const participants = chatRoom.get(chatId);
-    const senderSocket = participants?.get(userId);
-    const receiverSocket = participants?.get(receiverId); 
+    const readerSocket = participants?.get(userId);           // reader (current user)
+    const senderSocket = participants?.get(receiverId);       // sender of the messages
 
-    // find allmessage of chat and update isSeen to true of sender message
-    const messages = await Message.find({ chatId: chatId, receiver: userId, sender: receiverId, isSeen: false });
+    // Find unread messages sent by 'receiverId' to 'userId'
+    const messages = await Message.find({
+      chatId,
+      receiver: userId,
+      sender: receiverId,
+      isSeen: false,
+    });
+
     if (messages.length > 0) {
       await Message.updateMany(
-        { chatId: chatId, receiver: userId, sender: receiverId },
+        { chatId, receiver: userId, sender: receiverId, isSeen: false },
         { $set: { isSeen: true } }
       );
     }
 
-    // // if sender is live mark their message as seen
-    // const senderSocket = participants?.get(receiverId);
-    // if(senderSocket && senderSocket?.readyState === WebSocket.OPEN){
-    //   senderSocket.send(
-    //     JSON.stringify({ type: "markAsReadYourMessage" })
-    //   );
-    // }
+    // Notify sender that their message was read
+    if (senderSocket && senderSocket.readyState === WebSocket.OPEN) {
+      senderSocket.send(
+        JSON.stringify({
+          type: "markAsReadYourMessage",
+          payload: { success: true, isSeen: true, byUserId: userId },
+        })
+      );
+    }
 
-    // send response to client
-    if(receiverSocket && receiverSocket?.readyState === WebSocket.OPEN){
-      receiverSocket.send(
-        JSON.stringify({ type: "markAsReadYourMessage", payload: { success: true, isSeen: true } })
+    // Optionally notify the reader as well
+    if (readerSocket && readerSocket.readyState === WebSocket.OPEN) {
+      readerSocket.send(
+        JSON.stringify({
+          type: "markAsReadConfirmation",
+          payload: { success: true },
+        })
       );
     }
 
