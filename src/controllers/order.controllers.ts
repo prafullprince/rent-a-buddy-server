@@ -30,7 +30,6 @@ export const fetchUserChats = async (parsedData: any, socket: any) => {
 
     // fetch chats
     const chats = await Chat.find({ participants: userId })
-      .select("_id participants")
       .populate({
         path: "participants",
         select: "_id username image",
