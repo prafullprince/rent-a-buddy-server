@@ -36,8 +36,8 @@ export const fetchUserChats = async (parsedData: any, socket: any) => {
       })
       .populate({
         path: "message",
-        select: "_id text isSeen receiver",
-      }).lean();
+        select: "_id sender",
+      }).lean().exec();
     
     // send message to client
     socket.send(
