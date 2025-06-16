@@ -35,7 +35,11 @@ export const fetchUserChats = async (parsedData: any, socket: any) => {
         path: "participants",
         select: "_id username image",
       })
-    console.log("first", chats);
+      .populate({
+        path: "message",
+        select: "_id sender receiver"
+      })
+    
     // send message to client
     socket.send(
       JSON.stringify({
