@@ -36,7 +36,7 @@ export let senderSocket: null | WebSocket = null;
 export let receiverSocket: null | WebSocket = null;
 
 // allowed origins
-const allowedOrigins = ['https://www.rentabuddy.in/', 'https://rent-a-buddy-client.vercel.app/'];
+const allowedOrigins = ['https://www.rentabuddy.in/', 'https://rent-a-buddy-client.vercel.app/', 'http://localhost:3000'];
 
 // wesocket logic
 wss.on("connection", (socket:any)=>{
@@ -232,18 +232,18 @@ app.use(
   })
 );
 app.use(cookieParser());
-app.use(cors(
-  {
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
-}
-));
+// app.use(cors(
+//   {
+//   origin: function (origin, callback) {
+//     if (!origin || allowedOrigins.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   credentials: true
+// }
+// ));
 app.use(helmet());
 app.use(compression());
 // app.use(morgan("combined")); // Logs requests
