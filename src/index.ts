@@ -46,7 +46,7 @@ export let senderSocket: null | WebSocket = null;
 export let receiverSocket: null | WebSocket = null;
 
 // allowed origins
-const allowedOrigins = ['https://www.rentabuddy.in/', 'https://rent-a-buddy-client.vercel.app/', 'http://localhost:3000'];
+const allowedOrigins = ['https://www.rentabuddy.in', 'https://rent-a-buddy-client.vercel.app', 'http://localhost:3000'];
 
 // wesocket logic
 wss.on("connection", (socket: any) => {
