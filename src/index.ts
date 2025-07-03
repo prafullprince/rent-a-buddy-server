@@ -3,16 +3,16 @@ import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
-import cookieParser from 'cookie-parser';
-import fileUpload from 'express-fileupload';
-import http from 'http';
+import cookieParser from "cookie-parser";
+import fileUpload from "express-fileupload";
+import http from "http";
 import rateLimit from "express-rate-limit";
 
 // routes
 import authRoutes from "./routes/auth.routes";
 import categoryRoutes from "./routes/category.routes";
-import eventRoutes from './routes/event.routes';
-import chatRoutes from  "./routes/chat.routes";
+import eventRoutes from "./routes/event.routes";
+import chatRoutes from "./routes/chat.routes";
 import userRoutes from "./routes/user.routes";
 import paymentRoutes from "./routes/payment.routes";
 
@@ -20,7 +20,17 @@ import paymentRoutes from "./routes/payment.routes";
 import connectDB from "./config/mongodb";
 import { cloudinaryConnect } from "./config/cloudinary";
 import { WebSocketServer } from "ws";
-import { acceptOrder, fetchUserChats, markAsRead, registerUserInChatRoom, reloadChatPage, requestOrder, sendMessage, unseenMessageOfParticularChatIdOfUser, unseenMessages } from "./controllers/order.controllers";
+import {
+  acceptOrder,
+  fetchUserChats,
+  markAsRead,
+  registerUserInChatRoom,
+  reloadChatPage,
+  requestOrder,
+  sendMessage,
+  unseenMessageOfParticularChatIdOfUser,
+  unseenMessages,
+} from "./controllers/order.controllers";
 
 dotenv.config(); // Load environment variables
 
@@ -36,35 +46,35 @@ export let senderSocket: null | WebSocket = null;
 export let receiverSocket: null | WebSocket = null;
 
 // allowed origins
-const allowedOrigins = ['https://www.rentabuddy.in/', 'https://rent-a-buddy-client.vercel.app/', 'http://localhost:3000'];
+// const allowedOrigins = ['https://www.rentabuddy.in/', 'https://rent-a-buddy-client.vercel.app/', 'http://localhost:3000'];
 
 // wesocket logic
-wss.on("connection", (socket:any)=>{
+wss.on("connection", (socket: any) => {
   console.log("connected");
 
-  socket.on("message", (data:any)=>{
+  socket.on("message", (data: any) => {
     console.log("data:::", data);
 
     // parsedData
-    if(!data){
+    if (!data) {
       return;
     }
     const parsedData = JSON.parse(data.toString());
     console.log("parsedData", parsedData);
 
     // register user
-    if( parsedData.type === "register" ) {
-      registerUserInChatRoom( parsedData, socket );
+    if (parsedData.type === "register") {
+      registerUserInChatRoom(parsedData, socket);
     }
 
     // openChat
-    if( parsedData.type === "openChat" ) {
+    if (parsedData.type === "openChat") {
       console.log("openChat");
       userMap?.set(parsedData.payload.userId, parsedData.payload.chatId);
     }
 
     // closeChat
-    if( parsedData.type === "closeChat" ) {
+    if (parsedData.type === "closeChat") {
       console.log("closeChat");
       userMap?.delete(parsedData.payload.userId);
     }
@@ -76,133 +86,134 @@ wss.on("connection", (socket:any)=>{
     }
 
     // sendMessage
-    if( parsedData.type === "sendMessage" ) {
-      sendMessage( parsedData );
+    if (parsedData.type === "sendMessage") {
+      sendMessage(parsedData);
     }
 
     // requestOrder
-    if( parsedData.type === "requestOrder" ) {
+    if (parsedData.type === "requestOrder") {
       console.log("requestOrder");
-      requestOrder( parsedData, socket );
+      requestOrder(parsedData, socket);
     }
 
     // acceptOrder
-    if( parsedData.type === "acceptOrder" ) {
+    if (parsedData.type === "acceptOrder") {
       console.log("acceptOrder");
-      acceptOrder( parsedData, socket );
+      acceptOrder(parsedData, socket);
     }
 
     // reloadChat
-    if (parsedData.type === "reloadChatPage" ) {
+    if (parsedData.type === "reloadChatPage") {
       console.log("reloadChatPagesd,f sdm fdms fmndsfnm");
       reloadChatPage(parsedData, socket);
     }
 
     // markAsRead
-    if( parsedData.type === "markAsRead" ) {
+    if (parsedData.type === "markAsRead") {
       console.log("markAsRead");
-      markAsRead( parsedData, socket );
+      markAsRead(parsedData, socket);
     }
 
     // no of unseenMessages
-    if( parsedData.type === "unseenMessages" ) {
+    if (parsedData.type === "unseenMessages") {
       console.log("unseenMessages");
-      unseenMessages( parsedData, socket );
+      unseenMessages(parsedData, socket);
     }
 
     // unseenMessages of particular chatId
-    if( parsedData.type === "unseenMessageOfParticularChatIdOfUser" ) {
-      unseenMessageOfParticularChatIdOfUser( parsedData, socket );
+    if (parsedData.type === "unseenMessageOfParticularChatIdOfUser") {
+      unseenMessageOfParticularChatIdOfUser(parsedData, socket);
     }
 
     // fetchAllChat
-    if( parsedData.type === "fetchAllChat" ) {
+    if (parsedData.type === "fetchAllChat") {
       console.log("fetchAllChat");
-      fetchUserChats( parsedData, socket );
+      fetchUserChats(parsedData, socket);
     }
 
     // createOffer
-    else if( parsedData.type === "createOffer" ) {
+    else if (parsedData.type === "createOffer") {
       console.log("createOffer");
       const { chatId, userId, offer } = parsedData.payload;
 
       // get participants
       const participants = chatRoom.get(chatId);
-      if(!participants) return;
+      if (!participants) return;
 
       // get receiver socket
       const receiverSocket = participants.get(userId);
 
       // if receiverSocket is not available return
-      if(!receiverSocket) return;
+      if (!receiverSocket) return;
 
       // send offer to receiver
-      receiverSocket.send(JSON.stringify({ type: "createOffer", payload: offer }));
+      receiverSocket.send(
+        JSON.stringify({ type: "createOffer", payload: offer })
+      );
     }
 
     // createAnswer
-    else if( parsedData.type === "createAnswer" ) {
+    else if (parsedData.type === "createAnswer") {
       console.log("createAnswer");
 
       const { chatId, userId, sdp } = parsedData.payload;
-      
+
       // get participants
       const participants = chatRoom.get(chatId);
-      if(!participants) return;
+      if (!participants) return;
 
       // get sender socket
       const senderSocket = participants.get(userId);
 
       // if senderSocket is not available return
-      if(!senderSocket) return;
+      if (!senderSocket) return;
 
       // send offer to sender
       senderSocket.send(JSON.stringify({ type: "createAnswer", payload: sdp }));
     }
 
     // add-ice-candidate
-    else if( parsedData.type === "add-ice-candidate" ) {
+    else if (parsedData.type === "add-ice-candidate") {
       console.log("add-ice-candidate");
 
       const { chatId, userId, candidate } = parsedData.payload;
 
       // check socket of which one sender or receiver
-      
+
       // get participants
       const participants = chatRoom.get(chatId);
-      if(!participants) return;
+      if (!participants) return;
 
       // get receiver socket
       const receiverSocket = participants.get(userId);
 
       // if receiverSocket is not available return
-      if(!receiverSocket) return;
-  
-      // add-ice-candidate over receiver
-      receiverSocket.send(JSON.stringify({ type: "add-ice-candidate", payload: candidate }));
-    }
+      if (!receiverSocket) return;
 
-    else if( parsedData.type === "endCall" ) {
+      // add-ice-candidate over receiver
+      receiverSocket.send(
+        JSON.stringify({ type: "add-ice-candidate", payload: candidate })
+      );
+    } else if (parsedData.type === "endCall") {
       console.log("endCall");
 
       const { chatId, userId } = parsedData.payload;
 
       // get participants
       const participants = chatRoom.get(chatId);
-      if(!participants) return;
+      if (!participants) return;
 
       // get sender socket
       const receiverSocket = participants.get(userId);
 
       // if senderSocket is not available return
-      if(!receiverSocket) return;
+      if (!receiverSocket) return;
 
       // endCall over sender
       receiverSocket.send(JSON.stringify({ type: "endCall" }));
     }
-  })
-
-})
+  });
+});
 
 // rate limit
 const globalLimiter = rateLimit({
@@ -216,7 +227,7 @@ const globalLimiter = rateLimit({
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-})
+});
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
@@ -232,23 +243,27 @@ app.use(
   })
 );
 app.use(cookieParser());
-// app.use(cors(
-//   {
-//   origin: function (origin, callback) {
-//     if (!origin || allowedOrigins.includes(origin)) {
-//       callback(null, true);
-//     } else {
-//       callback(new Error('Not allowed by CORS'));
-//     }
-//   },
-//   credentials: true
-// }
-// ));
+app.use(
+  cors(
+    //   {
+    //   origin: function (origin, callback) {
+    //     if (!origin || allowedOrigins.includes(origin)) {
+    //       callback(null, true);
+    //     } else {
+    //       callback(new Error('Not allowed by CORS'));
+    //     }
+    //   },
+    //   credentials: true
+    // }
+    {
+      origin: "*",
+    }
+  )
+);
 app.use(helmet());
 app.use(compression());
 // app.use(morgan("combined")); // Logs requests
 app.use(globalLimiter);
-
 
 // PORT
 const PORT = process.env.PORT || 10000;
