@@ -43,8 +43,8 @@ export let receiverSocket: null | WebSocket = null;
 
 // allowed origins
 const allowedOrigins = [
-  "https://www.rentabuddy.in/",
-  "https://rent-a-buddy-client.vercel.app/",
+  "https://www.rentabuddy.in",
+  "https://rent-a-buddy-client.vercel.app",
 ];
 
 // socket logic
@@ -264,17 +264,16 @@ app.use(
 );
 app.use(cookieParser());
 app.use(
-  cors()
-  //   {
-  //   origin: function (origin, callback) {
-  //     if (!origin || allowedOrigins.includes(origin)) {
-  //       callback(null, true);
-  //     } else {
-  //       callback(new Error('Not allowed by CORS'));
-  //     }
-  //   },
-  //   credentials: true
-  // }
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+  })
 );
 app.use(helmet());
 app.use(compression());
