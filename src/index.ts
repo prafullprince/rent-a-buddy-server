@@ -97,77 +97,6 @@ io.on("connection", (socket: any) => {
     await client.del(`activeChat:${userId}`);
   });
 
-  // startCall
-  socket.on("startCall", async ({ to, from, room, isVideoCall }: any) => {
-    console.log("startCall");
-
-    // validation
-    if (!to || !from || !room) return;
-
-    let targetSocket = await client.get(`user:${to}`);
-    if (!targetSocket) {
-      targetSocket = await client.hget(`chat:${room}`, to);
-      if (!targetSocket) return;
-
-      // send to receiver
-      io.to(targetSocket).emit("incomingCall", { fromUserId: from, room, isVideoCall });
-    } else {
-      // send to receiver
-      io.to(targetSocket).emit("incomingCall", { fromUserId: from, room, video: isVideoCall });
-    }
-
-    // await client.set(`activeCall:${to}`, room);
-    // await client.set(`activeCall:${from}`, room);
-  });
-
-  // inCall
-  socket.on("inCall", async ({ to, room }: any) => {
-    console.log("inCall");
-
-    let toSocket = await client.get(`user:${to}`);
-    if (!toSocket) {
-      toSocket = await client.hget(`chat:${room}`, to);
-      if (!toSocket) return;
-      // send to sender
-      io.to(toSocket).emit("inCall", { toUserId: to, room });
-    } else {
-      // send to sender
-      io.to(toSocket).emit("inCall", { toUserId: to, room });
-    }
-  });
-
-  // endCall
-  socket.on("endCall", async ({ to, room }: any) => {
-    console.log("endCall");
-
-    let toSocket = await client.get(`user:${to}`);
-    if (!toSocket) {
-      toSocket = await client.hget(`chat:${room}`, to);
-      if (!toSocket) return;
-      // send to sender
-      io.to(toSocket).emit("endCall", { toUserId: to, room });
-    } else {
-      // send to sender
-      io.to(toSocket).emit("endCall", { toUserId: to, room });
-    }
-  });
-
-  // declined
-  socket.on("declined", async ({ to, room }: any) => {
-    console.log("declined");
-
-    let toSocket = await client.get(`user:${to}`);
-    if (!toSocket) {
-      toSocket = await client.hget(`chat:${room}`, to);
-      if (!toSocket) return;
-      // send to sender
-      io.to(toSocket).emit("endCall", { toUserId: to, room });
-    } else {
-      // send to sender
-      io.to(toSocket).emit("endCall", { toUserId: to, room });
-    }
-  });
-
   // requestOrder
   socket.on("requestOrder", (formData: any) => {
     console.log("requestOrder");
@@ -252,6 +181,26 @@ io.on("connection", (socket: any) => {
     if (!receiverSocket) return;
 
     io.to(receiverSocket).emit("endCall");
+  });
+
+  // toggleMic
+  socket.on("toggleMic", async ({ isMuted, chatId, userId }: any) => {
+    console.log("toggleMic");
+
+    const receiverSocket = await client.hget(`chat:${chatId}`, userId);
+    if (!receiverSocket) return;
+
+    io.to(receiverSocket).emit("toggleMic", { isMuted });
+  });
+
+  // toggleCamera
+  socket.on("toggleCamera", async ({ isMuted, chatId, userId }: any) => {
+    console.log("toggleCamera");
+
+    const receiverSocket = await client.hget(`chat:${chatId}`, userId);
+    if (!receiverSocket) return;
+
+    io.to(receiverSocket).emit("toggleCamera", { isMuted });
   });
 
   // On disconnect -> remove user from room

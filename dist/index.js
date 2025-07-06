@@ -91,75 +91,6 @@ io.on("connection", (socket) => {
             return;
         yield redis_1.default.del(`activeChat:${userId}`);
     }));
-    // startCall
-    socket.on("startCall", (_a) => __awaiter(void 0, [_a], void 0, function* ({ to, from, room, isVideoCall }) {
-        console.log("startCall");
-        // validation
-        if (!to || !from || !room)
-            return;
-        let targetSocket = yield redis_1.default.get(`user:${to}`);
-        if (!targetSocket) {
-            targetSocket = yield redis_1.default.hget(`chat:${room}`, to);
-            if (!targetSocket)
-                return;
-            // send to receiver
-            io.to(targetSocket).emit("incomingCall", { fromUserId: from, room, isVideoCall });
-        }
-        else {
-            // send to receiver
-            io.to(targetSocket).emit("incomingCall", { fromUserId: from, room, video: isVideoCall });
-        }
-        // await client.set(`activeCall:${to}`, room);
-        // await client.set(`activeCall:${from}`, room);
-    }));
-    // inCall
-    socket.on("inCall", (_a) => __awaiter(void 0, [_a], void 0, function* ({ to, room }) {
-        console.log("inCall");
-        let toSocket = yield redis_1.default.get(`user:${to}`);
-        if (!toSocket) {
-            toSocket = yield redis_1.default.hget(`chat:${room}`, to);
-            if (!toSocket)
-                return;
-            // send to sender
-            io.to(toSocket).emit("inCall", { toUserId: to, room });
-        }
-        else {
-            // send to sender
-            io.to(toSocket).emit("inCall", { toUserId: to, room });
-        }
-    }));
-    // endCall
-    socket.on("endCall", (_a) => __awaiter(void 0, [_a], void 0, function* ({ to, room }) {
-        console.log("endCall");
-        let toSocket = yield redis_1.default.get(`user:${to}`);
-        if (!toSocket) {
-            toSocket = yield redis_1.default.hget(`chat:${room}`, to);
-            if (!toSocket)
-                return;
-            // send to sender
-            io.to(toSocket).emit("endCall", { toUserId: to, room });
-        }
-        else {
-            // send to sender
-            io.to(toSocket).emit("endCall", { toUserId: to, room });
-        }
-    }));
-    // declined
-    socket.on("declined", (_a) => __awaiter(void 0, [_a], void 0, function* ({ to, room }) {
-        console.log("declined");
-        let toSocket = yield redis_1.default.get(`user:${to}`);
-        if (!toSocket) {
-            toSocket = yield redis_1.default.hget(`chat:${room}`, to);
-            if (!toSocket)
-                return;
-            // send to sender
-            io.to(toSocket).emit("endCall", { toUserId: to, room });
-        }
-        else {
-            // send to sender
-            io.to(toSocket).emit("endCall", { toUserId: to, room });
-        }
-    }));
     // requestOrder
     socket.on("requestOrder", (formData) => {
         console.log("requestOrder");
@@ -229,6 +160,22 @@ io.on("connection", (socket) => {
         if (!receiverSocket)
             return;
         io.to(receiverSocket).emit("endCall");
+    }));
+    // toggleMic
+    socket.on("toggleMic", (_a) => __awaiter(void 0, [_a], void 0, function* ({ isMuted, chatId, userId }) {
+        console.log("toggleMic");
+        const receiverSocket = yield redis_1.default.hget(`chat:${chatId}`, userId);
+        if (!receiverSocket)
+            return;
+        io.to(receiverSocket).emit("toggleMic", { isMuted });
+    }));
+    // toggleCamera
+    socket.on("toggleCamera", (_a) => __awaiter(void 0, [_a], void 0, function* ({ isMuted, chatId, userId }) {
+        console.log("toggleCamera");
+        const receiverSocket = yield redis_1.default.hget(`chat:${chatId}`, userId);
+        if (!receiverSocket)
+            return;
+        io.to(receiverSocket).emit("toggleCamera", { isMuted });
     }));
     // On disconnect -> remove user from room
     socket.on("disconnect", () => __awaiter(void 0, void 0, void 0, function* () {
