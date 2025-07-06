@@ -51,8 +51,8 @@ exports.senderSocket = null;
 exports.receiverSocket = null;
 // allowed origins
 const allowedOrigins = [
-    "https://www.rentabuddy.in/",
-    "https://rent-a-buddy-client.vercel.app/",
+    "https://www.rentabuddy.in",
+    "https://rent-a-buddy-client.vercel.app", "http://localhost:3000"
 ];
 // socket logic
 io.on("connection", (socket) => {
@@ -190,6 +190,46 @@ io.on("connection", (socket) => {
         console.log("reloadChatPage");
         (0, socket_controller_1.reloadChatPage)(receiverId, chatId, socket, io);
     });
+    // add-ice-candidate
+    socket.on("add-ice-candidate", (_a) => __awaiter(void 0, [_a], void 0, function* ({ chatId, userId, candidate }) {
+        console.log("add-ice-candidate");
+        const receiverSocket = yield redis_1.default.hget(`chat:${chatId}`, userId);
+        if (!receiverSocket)
+            return;
+        io.to(receiverSocket).emit("accept-ice-candidate", { candidate });
+    }));
+    // createOffer
+    socket.on("createOffer", (_a) => __awaiter(void 0, [_a], void 0, function* ({ chatId, userId, offer }) {
+        console.log("createOffer");
+        const receiverSocket = yield redis_1.default.hget(`chat:${chatId}`, userId);
+        if (!receiverSocket)
+            return;
+        io.to(receiverSocket).emit("acceptOffer", { offer });
+    }));
+    // createAnswer
+    socket.on("createAnswer", (_a) => __awaiter(void 0, [_a], void 0, function* ({ chatId, userId, answer }) {
+        console.log("createAnswer");
+        const receiverSocket = yield redis_1.default.hget(`chat:${chatId}`, userId);
+        if (!receiverSocket)
+            return;
+        io.to(receiverSocket).emit("acceptAnswer", { answer });
+    }));
+    // rejectCall
+    socket.on("rejectCall", (_a) => __awaiter(void 0, [_a], void 0, function* ({ chatId, userId }) {
+        console.log("rejectCall");
+        const receiverSocket = yield redis_1.default.hget(`chat:${chatId}`, userId);
+        if (!receiverSocket)
+            return;
+        io.to(receiverSocket).emit("rejectCall");
+    }));
+    // endCall
+    socket.on("endCall", (_a) => __awaiter(void 0, [_a], void 0, function* ({ chatId, userId }) {
+        console.log("endCall");
+        const receiverSocket = yield redis_1.default.hget(`chat:${chatId}`, userId);
+        if (!receiverSocket)
+            return;
+        io.to(receiverSocket).emit("endCall");
+    }));
     // On disconnect -> remove user from room
     socket.on("disconnect", () => __awaiter(void 0, void 0, void 0, function* () {
         console.log("disconnect");
@@ -240,18 +280,17 @@ app.use(
     preserveExtension: true,
 }));
 app.use((0, cookie_parser_1.default)());
-app.use((0, cors_1.default)()
-//   {
-//   origin: function (origin, callback) {
-//     if (!origin || allowedOrigins.includes(origin)) {
-//       callback(null, true);
-//     } else {
-//       callback(new Error('Not allowed by CORS'));
-//     }
-//   },
-//   credentials: true
-// }
-);
+app.use((0, cors_1.default)({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        }
+        else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+}));
 app.use((0, helmet_1.default)());
 app.use((0, compression_1.default)());
 // app.use(morgan("combined")); // Logs requests

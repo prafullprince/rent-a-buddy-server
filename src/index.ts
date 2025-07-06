@@ -44,7 +44,7 @@ export let receiverSocket: null | WebSocket = null;
 // allowed origins
 const allowedOrigins = [
   "https://www.rentabuddy.in",
-  "https://rent-a-buddy-client.vercel.app",
+  "https://rent-a-buddy-client.vercel.app","http://localhost:3000"
 ];
 
 // socket logic
@@ -202,6 +202,56 @@ io.on("connection", (socket: any) => {
   socket.on("reloadChatPage", ({ receiverId, chatId }: any) => {
     console.log("reloadChatPage");
     reloadChatPage(receiverId, chatId, socket, io);
+  });
+
+  // add-ice-candidate
+  socket.on("add-ice-candidate", async ({ chatId, userId, candidate }: any) => {
+    console.log("add-ice-candidate");
+    
+    const receiverSocket = await client.hget(`chat:${chatId}`, userId);
+    if (!receiverSocket) return;
+
+    io.to(receiverSocket).emit("accept-ice-candidate", { candidate });
+  });
+
+  // createOffer
+  socket.on("createOffer", async ({ chatId, userId, offer }: any) => {
+    console.log("createOffer");
+
+    const receiverSocket = await client.hget(`chat:${chatId}`, userId);
+    if (!receiverSocket) return;
+
+    io.to(receiverSocket).emit("acceptOffer", { offer });
+  });
+
+  // createAnswer
+  socket.on("createAnswer", async ({ chatId, userId, answer }: any) => {
+    console.log("createAnswer");
+
+    const receiverSocket = await client.hget(`chat:${chatId}`, userId);
+    if (!receiverSocket) return;
+
+    io.to(receiverSocket).emit("acceptAnswer", { answer });
+  });
+
+  // rejectCall
+  socket.on("rejectCall", async ({ chatId, userId }: any) => {
+    console.log("rejectCall");
+
+    const receiverSocket = await client.hget(`chat:${chatId}`, userId);
+    if (!receiverSocket) return;
+
+    io.to(receiverSocket).emit("rejectCall");
+  });
+
+  // endCall
+  socket.on("endCall", async ({ chatId, userId }: any) => {
+    console.log("endCall");
+
+    const receiverSocket = await client.hget(`chat:${chatId}`, userId);
+    if (!receiverSocket) return;
+
+    io.to(receiverSocket).emit("endCall");
   });
 
   // On disconnect -> remove user from room
